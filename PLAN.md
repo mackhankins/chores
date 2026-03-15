@@ -52,9 +52,11 @@ A family chore management app built with Laravel & Filament. Parents assign chor
 | Field | Type | Notes |
 |-------|------|-------|
 | id | ulid | |
-| chore_id | foreign key | |
+| chore_id | foreign key (nullable) | Set for single-chore assignments |
+| room_id | foreign key (nullable) | Set for room-level assignments (all active chores) |
 | child_id | foreign key (nullable) | Set for fixed assignments |
 | rotation_group_id | foreign key (nullable) | Set for rotating assignments |
+| | | **One of chore_id or room_id must be set** |
 | | | **One of child_id or rotation_group_id must be set** |
 
 ### Chore Completions
@@ -108,28 +110,28 @@ assigned_child = members[current_position]
 
 ### Phase 1 — Foundation (Current)
 - [x] Laravel project scaffolded
-- [ ] Install Filament
-- [ ] Create migrations for all tables
-- [ ] Create Eloquent models with relationships
-- [ ] Implement rotation calculation service
+- [x] Install Filament
+- [x] Create migrations for all tables
+- [x] Create Eloquent models with relationships
+- [x] Implement rotation calculation service
 
 ### Phase 2 — Admin Panel
-- [ ] Filament resources: Children, Rooms, Chores
-- [ ] Filament resources: Rotation Groups with member ordering
-- [ ] Filament resources: Chore Assignments (fixed vs rotating)
-- [ ] Dashboard widget: Today's chores overview
+- [x] Filament resources: Children, Rooms, Chores
+- [x] Filament resources: Rotation Groups with member ordering
+- [x] Filament resources: Chore Assignments (fixed vs rotating)
+- [x] Dashboard widget: Today's chores overview
 
 ### Phase 3 — Kid Check-in
-- [ ] PIN entry page (route: `/checkin`)
-- [ ] "My Chores Today" view with room grouping
-- [ ] Mark complete functionality
-- [ ] Simple session-based auth (PIN → child, expires same day)
+- [x] PIN entry page (route: `/`)
+- [x] "My Chores Today" view with room grouping
+- [x] Mark complete functionality
+- [x] Simple session-based auth (PIN → child, expires same day)
 
-### Phase 4 — SMS Notifications (Future)
-- [ ] Integrate Twilio/Vonage
-- [ ] Scheduled command: `chores:notify-daily`
-- [ ] Compute today's assignments, send texts each morning
-- [ ] Optional completion reminders in the evening
+### Phase 4 — SMS Notifications
+- [x] Integrate Twilio
+- [x] Scheduled command: `chores:notify` (runs every minute)
+- [x] Morning notification: chore list + dashboard link, per-kid time
+- [x] Evening reminder: remaining chores + dashboard link, per-kid time
 
 ---
 

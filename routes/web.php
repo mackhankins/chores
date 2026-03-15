@@ -2,6 +2,5 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::livewire('/', 'pages::checkin')->name('checkin');
+Route::livewire('/chores', 'pages::chores')->name('chores');
