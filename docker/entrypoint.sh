@@ -5,10 +5,9 @@ cd /var/www/html
 
 # Ensure database exists
 touch database/database.sqlite
-chown www-data:www-data database/database.sqlite
 
 # Run migrations
-php artisan migrate --force --no-interaction
+php artisan migrate --force --no-interaction 2>&1
 
-# Start Apache
-exec apache2-foreground
+# Pass through to the original PHP Docker entrypoint
+exec docker-php-entrypoint "$@"

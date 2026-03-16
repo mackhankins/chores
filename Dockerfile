@@ -41,7 +41,7 @@ WORKDIR /var/www/html
 COPY --chown=www-data:www-data . .
 COPY --from=frontend --chown=www-data:www-data /app/public/build ./public/build
 
-RUN php -m && composer install --no-dev --optimize-autoloader --no-interaction -v
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Setup storage and database
 RUN touch .env \
@@ -56,3 +56,4 @@ COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
 EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["apache2-foreground"]
