@@ -16,9 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo-dev \
     libpng-dev \
     libicu-dev \
+    libzip-dev \
+    libxml2-dev \
     unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_sqlite gd intl pcntl \
+    && docker-php-ext-install pdo_sqlite gd intl pcntl zip bcmath xml fileinfo \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -39,7 +41,7 @@ WORKDIR /var/www/html
 COPY --chown=www-data:www-data . .
 COPY --from=frontend --chown=www-data:www-data /app/public/build ./public/build
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN php -m && composer install --no-dev --optimize-autoloader --no-interaction -v
 
 # Setup storage and database
 RUN touch .env \
