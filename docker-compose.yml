@@ -1,9 +1,7 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: laravel-app
+    image: ghcr.io/mackhankins/chores:latest
+    container_name: chores-app
     restart: unless-stopped
     ports:
       - "8088:8080"
@@ -11,12 +9,57 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_URL: http://192.168.40.103:8088
+      APP_KEY: ${APP_KEY}
       DB_CONNECTION: sqlite
       DB_DATABASE: /var/www/html/database/database.sqlite
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      TWILIO_SID: ${TWILIO_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
     volumes:
-      # Persist the SQLite database across container restarts
       - sqlite-data:/var/www/html/database
-      # Persist storage (logs, uploaded files, cache)
+      - app-storage:/var/www/html/storage
+
+  scheduler:
+    image: ghcr.io/mackhankins/chores:latest
+    container_name: chores-scheduler
+    restart: unless-stopped
+    command: ["php", "/var/www/html/artisan", "schedule:work", "--no-interaction"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://192.168.40.103:8088
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      QUEUE_CONNECTION: database
+      TWILIO_SID: ${TWILIO_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
+    volumes:
+      - sqlite-data:/var/www/html/database
+      - app-storage:/var/www/html/storage
+
+  queue:
+    image: ghcr.io/mackhankins/chores:latest
+    container_name: chores-queue
+    restart: unless-stopped
+    command: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=3", "--no-interaction"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://192.168.40.103:8088
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      QUEUE_CONNECTION: database
+      TWILIO_SID: ${TWILIO_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
+    volumes:
+      - sqlite-data:/var/www/html/database
       - app-storage:/var/www/html/storage
 
 volumes:

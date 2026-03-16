@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.backup
+.env.production
+node_modules
+vendor
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+database/database.sqlite
+tests
+.claude
+.cursor
+.junie
