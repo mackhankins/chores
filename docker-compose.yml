@@ -34,7 +34,7 @@ services:
     image: ghcr.io/mackhankins/chores:latest
     container_name: chores-scheduler
     restart: unless-stopped
-    command: ["php", "/var/www/html/artisan", "schedule:work", "--no-interaction"]
+    entrypoint: ["php", "/var/www/html/artisan", "schedule:work", "--no-interaction"]
     environment:
       <<: *shared-env
       AUTORUN_ENABLED: "false"
@@ -44,7 +44,7 @@ services:
     image: ghcr.io/mackhankins/chores:latest
     container_name: chores-queue
     restart: unless-stopped
-    command: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=3", "--no-interaction"]
+    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=3", "--no-interaction"]
     environment:
       <<: *shared-env
       AUTORUN_ENABLED: "false"
