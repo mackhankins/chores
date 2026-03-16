@@ -11,12 +11,7 @@ FROM serversideup/php:8.3-fpm-nginx
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    php8.3-sqlite3 \
-    php8.3-gd \
-    php8.3-intl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN install-php-extensions pdo_sqlite sqlite3 gd intl
 
 ENV APP_BASE_DIR=/var/www/html
 
