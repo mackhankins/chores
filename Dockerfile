@@ -26,6 +26,5 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN mkdir -p ${APP_BASE_DIR}/database \
     && touch ${APP_BASE_DIR}/database/database.sqlite \
-    && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
