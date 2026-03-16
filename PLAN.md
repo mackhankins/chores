@@ -133,6 +133,23 @@ assigned_child = members[current_position]
 - [x] Morning notification: chore list + dashboard link, per-kid time
 - [x] Evening reminder: remaining chores + dashboard link, per-kid time
 
+### Phase 5 — Deployment (QNAP Docker)
+- [x] Dockerfile: multi-stage build (Node for Vite, PHP 8.3 Apache)
+- [x] GitHub Actions: build & push to GHCR on push to main
+- [x] docker-compose.yml with app, scheduler, and queue services
+- [ ] Switch to bind mount volumes so database survives container recreation
+  - Change `sqlite-data:/var/www/html/database` → `/share/Container/chores/database:/var/www/html/database`
+  - Same for `app-storage` → `/share/Container/chores/storage:/var/www/html/storage`
+  - Remove named `volumes:` section at bottom
+  - Create dirs on QNAP first: `mkdir -p /share/Container/chores/{database,storage}`
+- [ ] Twilio toll-free verification pending (required to send SMS in US)
+
+#### Deployment Notes
+- **Container Station image cache**: After GitHub Actions builds a new image, you must pull the fresh image from Container Station's **Images** menu before recreating the app. It caches aggressively.
+- **Seeding in production**: `docker exec -it chores-app php /var/www/html/artisan db:seed --force`
+- **Create admin user**: `docker exec -it chores-app php /var/www/html/artisan make:filament-user`
+- **Test SMS**: `docker exec -it chores-app php /var/www/html/artisan chores:notify --test-child=ChildName`
+
 ---
 
 ## Tech Stack
