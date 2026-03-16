@@ -6,27 +6,23 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: Composer dependencies
-FROM composer:2 AS vendor
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-COPY . .
-RUN composer dump-autoload --optimize
-
-# Stage 3: Production image
+# Stage 2: Production image
 FROM php:8.3-apache
 
-# Install PHP extensions
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-dev \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
     libicu-dev \
+    unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_sqlite gd intl pcntl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -39,10 +35,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 WORKDIR /var/www/html
 
-# Copy application
+# Copy application and install dependencies
 COPY --chown=www-data:www-data . .
-COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
 COPY --from=frontend --chown=www-data:www-data /app/public/build ./public/build
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Setup storage and database
 RUN touch .env \
