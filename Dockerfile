@@ -20,11 +20,16 @@ COPY --chown=www-data:www-data . ${APP_BASE_DIR}
 # Copy built frontend assets from stage 1
 COPY --from=frontend --chown=www-data:www-data /app/public/build ${APP_BASE_DIR}/public/build
 
+# Ensure .env file exists (runtime env vars will override)
+RUN touch ${APP_BASE_DIR}/.env
+
+# Ensure storage structure exists and is writable
+RUN mkdir -p ${APP_BASE_DIR}/storage/framework/{cache,sessions,views} \
+    && mkdir -p ${APP_BASE_DIR}/storage/logs \
+    && mkdir -p ${APP_BASE_DIR}/database \
+    && touch ${APP_BASE_DIR}/database/database.sqlite \
+    && chown -R www-data:www-data ${APP_BASE_DIR}/storage ${APP_BASE_DIR}/database
+
 USER www-data
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-RUN mkdir -p ${APP_BASE_DIR}/database \
-    && touch ${APP_BASE_DIR}/database/database.sqlite \
-    && php artisan route:cache \
-    && php artisan view:cache
