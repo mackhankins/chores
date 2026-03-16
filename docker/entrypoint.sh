@@ -1,11 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-# Ensure SQLite database exists
-touch /var/www/html/database/database.sqlite
+cd /var/www/html
+
+# Ensure database exists
+touch database/database.sqlite
+chown www-data:www-data database/database.sqlite
 
 # Run migrations
-php /var/www/html/artisan migrate --force --no-interaction
+php artisan migrate --force --no-interaction
 
-# Execute the original command
-exec "$@"
+# Start Apache
+exec apache2-foreground

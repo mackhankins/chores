@@ -6,29 +6,54 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: PHP application
-FROM serversideup/php:8.3-fpm-nginx
+# Stage 2: Composer dependencies
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+COPY . .
+RUN composer dump-autoload --optimize
 
-USER root
+# Stage 3: Production image
+FROM php:8.3-apache
 
-RUN install-php-extensions pdo_sqlite sqlite3 gd intl
+# Install PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsqlite3-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libicu-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_sqlite gd intl pcntl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install composer dependencies first (better layer caching)
-COPY --chown=www-data:www-data composer.json composer.lock /var/www/html/
-RUN cd /var/www/html && composer install --no-dev --optimize-autoloader --no-interaction
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
-# Copy application files
-COPY --chown=www-data:www-data . /var/www/html
+# Set Apache document root to Laravel's public directory
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && sed -ri -e 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
-# Copy built frontend assets from stage 1
-COPY --from=frontend --chown=www-data:www-data /app/public/build /var/www/html/public/build
+WORKDIR /var/www/html
 
-# Ensure .env exists and storage/database are writable
-RUN touch /var/www/html/.env \
-    && mkdir -p /var/www/html/storage/framework/{cache,sessions,views} \
-    && mkdir -p /var/www/html/storage/logs \
-    && mkdir -p /var/www/html/database \
-    && touch /var/www/html/database/database.sqlite \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/database /var/www/html/bootstrap/cache
+# Copy application
+COPY --chown=www-data:www-data . .
+COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
+COPY --from=frontend --chown=www-data:www-data /app/public/build ./public/build
 
-USER www-data
+# Setup storage and database
+RUN touch .env \
+    && mkdir -p storage/framework/{cache,sessions,views} \
+    && mkdir -p storage/logs \
+    && mkdir -p database \
+    && touch database/database.sqlite \
+    && chown -R www-data:www-data storage database bootstrap/cache
+
+COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]

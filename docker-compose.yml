@@ -22,12 +22,9 @@ services:
     container_name: chores-app
     restart: unless-stopped
     ports:
-      - "8088:8080"
+      - "8088:80"
     environment:
       <<: *shared-env
-      AUTORUN_ENABLED: "true"
-      AUTORUN_LARAVEL_MIGRATION: "true"
-      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
     volumes: *shared-volumes
 
   scheduler:
@@ -37,7 +34,6 @@ services:
     entrypoint: ["php", "/var/www/html/artisan", "schedule:work", "--no-interaction"]
     environment:
       <<: *shared-env
-      AUTORUN_ENABLED: "false"
     volumes: *shared-volumes
 
   queue:
@@ -47,7 +43,6 @@ services:
     entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=3", "--no-interaction"]
     environment:
       <<: *shared-env
-      AUTORUN_ENABLED: "false"
     volumes: *shared-volumes
 
 volumes:
