@@ -16,7 +16,6 @@ RUN install-php-extensions pdo_sqlite sqlite3 gd intl
 ENV APP_BASE_DIR=/var/www/html
 
 COPY --chown=www-data:www-data . ${APP_BASE_DIR}
-COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
 
 # Copy built frontend assets from stage 1
 COPY --from=frontend --chown=www-data:www-data /app/public/build ${APP_BASE_DIR}/public/build
@@ -30,5 +29,3 @@ RUN mkdir -p ${APP_BASE_DIR}/database \
     && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
-
-ENTRYPOINT ["/entrypoint.sh"]
