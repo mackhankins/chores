@@ -250,8 +250,10 @@ class extends Component
                     Switch
                 </button>
             </div>
+        </div>
 
-            {{-- Progress --}}
+        {{-- Progress + Earnings card --}}
+        <div class="px-5">
             @php
                 $totalChores = 0;
                 $completedChores = 0;
@@ -269,11 +271,10 @@ class extends Component
                 }
                 $totalChores += $carryoverCount;
                 $progress = $totalChores > 0 ? round(($completedChores / $totalChores) * 100) : 0;
+                $earnings = $this->monthlyEarnings;
             @endphp
 
-            @php $earnings = $this->monthlyEarnings; @endphp
-
-            <div class="mt-4 rounded-2xl bg-white p-4 shadow-sm">
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
                 {{-- Chore progress --}}
                 <div class="mb-2 flex items-center justify-between text-sm">
                     <span class="font-medium">Today</span>
@@ -294,6 +295,7 @@ class extends Component
                     @php
                         $totalCredit = $earnings['earned'] + $earnings['paid'];
                         $rentProgress = $earnings['rent'] > 0 ? min(100, round(($totalCredit / $earnings['rent']) * 100)) : 100;
+                        $potentialSavings = $earnings['potential'] - $earnings['earned'];
                     @endphp
                     <div class="mt-4 mb-2 flex items-center justify-between text-sm">
                         <span class="font-medium">{{ $earnings['balance'] > 0 ? 'Rent' : 'Rent — Paid off!' }}</span>
@@ -305,7 +307,12 @@ class extends Component
                             style="width: {{ $rentProgress }}%"
                         ></div>
                     </div>
-                    <p class="mt-1 text-xs text-gray-400">${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</p>
+                    <div class="mt-1 flex items-center justify-between text-xs text-gray-400">
+                        <span>${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</span>
+                        @if ($potentialSavings > 0 && $earnings['balance'] > 0)
+                            <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} still possible</span>
+                        @endif
+                    </div>
                 @elseif ($earnings['potential'] > 0)
                     @php
                         $earnProgress = $earnings['potential'] > 0 ? min(100, round(($earnings['earned'] / $earnings['potential']) * 100)) : 0;
@@ -326,7 +333,7 @@ class extends Component
         </div>
 
         {{-- Chores by room --}}
-        <div class="flex-1 px-5 pb-8">
+        <div class="flex-1 px-5 pb-8 pt-4">
             {{-- Carryover section --}}
             @if (count($this->carryoverChores) > 0)
                 <div class="mb-6">
