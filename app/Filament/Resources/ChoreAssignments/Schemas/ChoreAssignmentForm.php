@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ChoreAssignments\Schemas;
 
+use App\Filament\Resources\ChoreAssignments\Pages\CreateChoreAssignment;
 use App\Models\Chore;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -17,7 +18,7 @@ class ChoreAssignmentForm
                 Radio::make('scope')
                     ->label('Assign')
                     ->options([
-                        'chore' => 'Single chore',
+                        'chore' => 'Individual chores',
                         'room' => 'Entire room (all active chores)',
                     ])
                     ->default('chore')
@@ -32,6 +33,7 @@ class ChoreAssignmentForm
                     })
                     ->columnSpanFull(),
                 Select::make('chore_id')
+                    ->label('Chores')
                     ->relationship(
                         'chore',
                         'name',
@@ -41,6 +43,7 @@ class ChoreAssignmentForm
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->multiple(fn ($livewire) => $livewire instanceof CreateChoreAssignment)
                     ->visible(fn ($get) => $get('scope') === 'chore'),
                 Select::make('room_id')
                     ->relationship('room', 'name')
