@@ -1,59 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Chores
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A family chore management app built with Laravel, Filament, and Livewire. Parents configure chores by room and set up fixed or rotating assignment schedules through a Filament admin panel. Kids check in with a 4-digit PIN to see their daily tasks and mark them complete on a mobile-friendly dashboard.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Room-based chore organization** — group chores by room (Kitchen, Bathroom, Yard, etc.) with emoji icons and custom sort order
+- **Flexible assignment** — assign chores to a specific child or to a rotation group that automatically cycles through kids on daily, weekly, biweekly, or monthly schedules
+- **Bulk assignment** — select multiple chores at once when creating assignments
+- **Kid dashboard** — mobile-friendly check-in with a simple 4-digit PIN, progress bar, and tap-to-complete interface
+- **SMS notifications** — morning chore lists and evening reminders via mail-to-SMS carrier gateways (Verizon, AT&T, T-Mobile, Sprint) through Gmail SMTP
+- **Vacation tracking** — pause assignments when kids are away
+- **Missed chore carryover** — opt-in per chore; missed tasks reappear on the dashboard for up to 7 days (configurable) until completed
+- **Completion reporting** — dashboard stats widget with per-child monthly completion rates and sparkline charts, plus a detailed report page with period/child filters and per-chore breakdown
+- **Self-hosted** — runs on Docker with a multi-stage build, deployed via GitHub Actions to GHCR
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **PHP 8.4** / **Laravel 12**
+- **Filament 5** — admin panel
+- **Livewire 4** — kid-facing UI
+- **Tailwind CSS 4**
+- **SQLite** — database
+- **Docker** — multi-stage build (Composer, Node, PHP/Apache)
 
-## Learning Laravel
+## Local Development
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+# Clone and install
+git clone https://github.com/mackhankins/chores.git
+cd chores
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# Set up database
+touch database/database.sqlite
+php artisan migrate
+php artisan db:seed
 
-## Laravel Sponsors
+# Run dev server
+composer run dev
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+The admin panel is at `/admin` (seeded credentials: `admin@admin.com` / `password`).
+The kid dashboard is at `/`.
 
-### Premium Partners
+## Docker Deployment
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+The app is designed to self-host on a NAS or any Docker host.
 
-## Contributing
+### Build and run
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+docker compose up -d
+```
 
-## Code of Conduct
+### Services
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Service | Purpose |
+|---------|---------|
+| `app` | Laravel + Apache on port 8088 |
+| `scheduler` | Runs `schedule:work` for notifications and nightly reconciliation |
+| `queue` | Processes queued jobs |
 
-## Security Vulnerabilities
+### Data persistence
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+All persistent data lives on bind-mounted volumes:
+
+- `/share/chores/data` — SQLite database
+- `/share/chores/storage/logs` — application logs
+- `/share/chores/storage/framework/sessions` — sessions
+
+### First-time setup
+
+```bash
+# Create admin user
+docker exec -it chores-app php artisan make:filament-user
+
+# Test SMS notifications
+docker exec -it chores-app php artisan chores:notify --test-child=ChildName
+```
+
+### Updating
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Migrations run automatically on container start.
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHORES_CARRYOVER_DAYS` | `7` | Days a missed chore carries over before expiring |
+| `MAIL_MAILER` | `smtp` | Set to `smtp` for Gmail |
+| `MAIL_HOST` | — | `smtp.gmail.com` for Gmail |
+| `MAIL_USERNAME` | — | Gmail address |
+| `MAIL_PASSWORD` | — | Gmail app password |
+
+### SMS Notifications
+
+SMS is sent via mail-to-SMS carrier gateways (no Twilio or third-party SMS API required). Configure each child's phone number and carrier in the admin panel. Supported carriers:
+
+- Verizon (`vtext.com`)
+- AT&T (`txt.att.net`)
+- T-Mobile (`tmomail.net`)
+- Sprint (`messaging.sprintpcs.com`)
+
+Notifications are configured per-child with separate morning and evening times.
+
+## Artisan Commands
+
+| Command | Schedule | Description |
+|---------|----------|-------------|
+| `chores:notify` | Every minute | Sends morning chore lists and evening reminders based on per-child notification times |
+| `chores:reconcile` | Daily at midnight | Records missed chores for carryover-eligible tasks |
+| `chores:notify --test-child=Name` | Manual | Sends both notifications immediately to a specific child for testing |
+| `chores:reconcile --date=YYYY-MM-DD` | Manual | Reconcile a specific date instead of yesterday |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
