@@ -4,7 +4,7 @@ x-env: &shared-env
   APP_URL: http://192.168.40.103:8088
   APP_KEY: # your APP_KEY here
   DB_CONNECTION: sqlite
-  DB_DATABASE: /var/www/html/database/database.sqlite
+  DB_DATABASE: /data/database.sqlite
   SESSION_DRIVER: database
   QUEUE_CONNECTION: database
   CACHE_STORE: database
@@ -18,8 +18,9 @@ x-env: &shared-env
   MAIL_FROM_NAME: Hankins Chores
 
 x-volumes: &shared-volumes
-  - /share/chores/database:/var/www/html/database
-  - /share/chores/storage:/var/www/html/storage
+  - /share/chores/data:/data
+  - /share/chores/storage/logs:/var/www/html/storage/logs
+  - /share/chores/storage/framework/sessions:/var/www/html/storage/framework/sessions
 
 services:
   app:
