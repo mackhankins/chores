@@ -7,7 +7,6 @@ use App\Models\Chore;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 
 class ChoreAssignmentForm
 {
@@ -33,15 +32,13 @@ class ChoreAssignmentForm
                     })
                     ->columnSpanFull(),
                 Select::make('chore_id')
-                    ->label('Chores')
-                    ->relationship(
-                        'chore',
-                        'name',
-                        fn (Builder $query) => $query->with('room'),
-                    )
-                    ->getOptionLabelFromRecordUsing(fn (Chore $record) => "{$record->name} ({$record->room->name})")
+                    ->label(fn ($livewire) => $livewire instanceof CreateChoreAssignment ? 'Chores' : 'Chore')
+                    ->options(fn () => Chore::query()
+                        ->with('room')
+                        ->where('is_active', true)
+                        ->get()
+                        ->mapWithKeys(fn (Chore $chore) => [$chore->id => "{$chore->name} ({$chore->room->name})"]))
                     ->searchable()
-                    ->preload()
                     ->required()
                     ->multiple(fn ($livewire) => $livewire instanceof CreateChoreAssignment)
                     ->visible(fn ($get) => $get('scope') === 'chore'),
