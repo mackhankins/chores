@@ -28,12 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'twilio' => [
-        'sid' => env('TWILIO_SID'),
-        'auth_token' => env('TWILIO_AUTH_TOKEN'),
-        'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

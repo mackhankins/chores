@@ -8,13 +8,18 @@ x-env: &shared-env
   SESSION_DRIVER: database
   QUEUE_CONNECTION: database
   CACHE_STORE: database
-  TWILIO_SID: # your Twilio SID here
-  TWILIO_AUTH_TOKEN: # your Twilio auth token here
-  TWILIO_MESSAGING_SERVICE_SID: # your Twilio messaging service SID here
+  MAIL_MAILER: smtp
+  MAIL_HOST: smtp.gmail.com
+  MAIL_PORT: 587
+  MAIL_USERNAME: # your Gmail address
+  MAIL_PASSWORD: # your Gmail app password
+  MAIL_ENCRYPTION: tls
+  MAIL_FROM_ADDRESS: # your Gmail address
+  MAIL_FROM_NAME: Hankins Chores
 
 x-volumes: &shared-volumes
-  - sqlite-data:/var/www/html/database
-  - app-storage:/var/www/html/storage
+  - /share/chores/database:/var/www/html/database
+  - /share/chores/storage:/var/www/html/storage
 
 services:
   app:
@@ -45,6 +50,3 @@ services:
       <<: *shared-env
     volumes: *shared-volumes
 
-volumes:
-  sqlite-data:
-  app-storage:

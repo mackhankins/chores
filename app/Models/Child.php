@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\Carrier;
 use Database\Factories\ChildFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Child extends Model
 {
@@ -17,11 +19,19 @@ class Child extends Model
     protected $fillable = [
         'name',
         'phone',
+        'carrier',
         'pin',
         'avatar_color',
         'notify_morning_at',
         'notify_reminder_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'carrier' => Carrier::class,
+        ];
+    }
 
     public function choreAssignments(): HasMany
     {
@@ -37,5 +47,20 @@ class Child extends Model
     {
         return $this->belongsToMany(RotationGroup::class, 'rotation_group_members')
             ->withPivot('position');
+    }
+
+    public function vacations(): BelongsToMany
+    {
+        return $this->belongsToMany(Vacation::class);
+    }
+
+    public function isOnVacation(?Carbon $date = null): bool
+    {
+        $date = $date ?? today();
+
+        return $this->vacations()
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->exists();
     }
 }

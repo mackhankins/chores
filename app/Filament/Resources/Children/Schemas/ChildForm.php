@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Children\Schemas;
 
+use App\Enums\Carrier;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Schemas\Components\Section;
@@ -45,6 +47,11 @@ class ChildForm
                             substr($digits, 6, 4),
                         );
                     }),
+                Select::make('carrier')
+                    ->options(collect(Carrier::cases())->mapWithKeys(
+                        fn (Carrier $carrier) => [$carrier->value => $carrier->label()]
+                    ))
+                    ->placeholder('Select carrier'),
                 TextInput::make('pin')
                     ->required()
                     ->length(4)
@@ -52,7 +59,7 @@ class ChildForm
                 ColorPicker::make('avatar_color')
                     ->required(),
                 Section::make('SMS Notifications')
-                    ->description('Requires a phone number. Leave times empty to disable.')
+                    ->description('Requires a phone number and carrier. Leave times empty to disable.')
                     ->schema([
                         TimePicker::make('notify_morning_at')
                             ->label('Morning chore list')

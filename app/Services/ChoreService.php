@@ -77,6 +77,10 @@ class ChoreService
      */
     public function getTodaysChoresForChild(Child $child): Collection
     {
+        if ($child->isOnVacation()) {
+            return collect();
+        }
+
         return $this->getTodaysChores()
             ->filter(fn (array $item) => $item['child']?->id === $child->id)
             ->values();

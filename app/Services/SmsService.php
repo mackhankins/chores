@@ -2,41 +2,33 @@
 
 namespace App\Services;
 
+use App\Enums\Carrier;
 use Illuminate\Support\Facades\Log;
-use Twilio\Rest\Client;
+use Illuminate\Support\Facades\Mail;
 
 class SmsService
 {
-    protected ?Client $client = null;
-
-    public function send(string $to, string $message): void
+    /**
+     * Send an SMS via the carrier's email-to-SMS gateway.
+     *
+     * @param  string  $phone  Phone number in +1XXXXXXXXXX format
+     */
+    public function send(string $phone, string $message, Carrier $carrier): void
     {
-        $sid = config('services.twilio.sid');
-        $token = config('services.twilio.auth_token');
-        $messagingServiceSid = config('services.twilio.messaging_service_sid');
+        $digits = preg_replace('/\D/', '', $phone);
+        $digits = substr($digits, -10);
 
-        if (! $sid || ! $token || ! $messagingServiceSid) {
-            Log::warning('Twilio credentials not configured, skipping SMS.', [
-                'to' => $to,
-                'message' => $message,
-            ]);
+        $gateway = $digits.'@'.$carrier->smsGatewayDomain();
 
-            return;
-        }
+        Mail::raw($message, function ($mail) use ($gateway) {
+            $mail->to($gateway);
+            $mail->subject('');
+        });
 
-        $this->client ??= new Client($sid, $token);
-
-        $result = $this->client->messages->create($to, [
-            'messagingServiceSid' => $messagingServiceSid,
-            'body' => $message,
-        ]);
-
-        Log::info('Twilio SMS sent', [
-            'to' => $to,
-            'sid' => $result->sid,
-            'status' => $result->status,
-            'errorCode' => $result->errorCode,
-            'errorMessage' => $result->errorMessage,
+        Log::info('SMS sent via mail-to-SMS gateway', [
+            'to' => $phone,
+            'gateway' => $gateway,
+            'carrier' => $carrier->value,
         ]);
     }
 }

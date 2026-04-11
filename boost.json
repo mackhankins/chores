@@ -5,11 +5,12 @@
         "claude_code"
     ],
     "guidelines": true,
-    "herd_mcp": false,
+    "herd_mcp": true,
     "mcp": true,
     "nightwatch_mcp": false,
     "sail": false,
     "skills": [
-        "pest-testing"
+        "pest-testing",
+        "tailwindcss-development"
     ]
 }

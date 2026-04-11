@@ -43,8 +43,8 @@ class SendChoreNotifications extends Command
             return;
         }
 
-        if (! $child->phone) {
-            $this->error("{$child->name} has no phone number set.");
+        if (! $child->phone || ! $child->carrier) {
+            $this->error("{$child->name} has no phone number or carrier set.");
 
             return;
         }
@@ -57,14 +57,13 @@ class SendChoreNotifications extends Command
             return;
         }
 
-        $choreNames = $chores->pluck('chore.name')->implode(', ');
         $count = $chores->count();
 
         $message = "Good morning {$child->name}! You have {$count} "
             .($count === 1 ? 'chore' : 'chores')
-            ." today: {$choreNames}. Check them off here: {$dashboardUrl}";
+            ." today. {$dashboardUrl}";
 
-        $smsService->send($child->phone, $message);
+        $smsService->send($child->phone, $message, $child->carrier);
         $this->info("Test morning notification sent to {$child->name} at {$child->phone}");
 
         $completedIds = ChoreCompletion::query()
@@ -83,14 +82,13 @@ class SendChoreNotifications extends Command
             return;
         }
 
-        $remainingNames = $remaining->pluck('chore.name')->implode(', ');
         $remainingCount = $remaining->count();
 
         $reminderMessage = "Hey {$child->name}, you still have {$remainingCount} "
             .($remainingCount === 1 ? 'chore' : 'chores')
-            ." left: {$remainingNames}. Finish up! {$dashboardUrl}";
+            ." left. Finish up! {$dashboardUrl}";
 
-        $smsService->send($child->phone, $reminderMessage);
+        $smsService->send($child->phone, $reminderMessage, $child->carrier);
         $this->info("Test reminder sent to {$child->name}");
     }
 
@@ -102,6 +100,7 @@ class SendChoreNotifications extends Command
     ): void {
         $children = Child::query()
             ->whereNotNull('phone')
+            ->whereNotNull('carrier')
             ->whereNotNull('notify_morning_at')
             ->whereRaw("strftime('%H:%M', notify_morning_at) = ?", [$currentTime])
             ->get();
@@ -113,14 +112,13 @@ class SendChoreNotifications extends Command
                 continue;
             }
 
-            $choreNames = $chores->pluck('chore.name')->implode(', ');
             $count = $chores->count();
 
             $message = "Good morning {$child->name}! You have {$count} "
                 .($count === 1 ? 'chore' : 'chores')
-                ." today: {$choreNames}. Check them off here: {$dashboardUrl}";
+                ." today. {$dashboardUrl}";
 
-            $smsService->send($child->phone, $message);
+            $smsService->send($child->phone, $message, $child->carrier);
             $this->info("Morning notification sent to {$child->name}");
         }
     }
@@ -133,6 +131,7 @@ class SendChoreNotifications extends Command
     ): void {
         $children = Child::query()
             ->whereNotNull('phone')
+            ->whereNotNull('carrier')
             ->whereNotNull('notify_reminder_at')
             ->whereRaw("strftime('%H:%M', notify_reminder_at) = ?", [$currentTime])
             ->get();
@@ -158,14 +157,13 @@ class SendChoreNotifications extends Command
                 continue;
             }
 
-            $remainingNames = $remaining->pluck('chore.name')->implode(', ');
             $count = $remaining->count();
 
             $message = "Hey {$child->name}, you still have {$count} "
                 .($count === 1 ? 'chore' : 'chores')
-                ." left: {$remainingNames}. Finish up! {$dashboardUrl}";
+                ." left. Finish up! {$dashboardUrl}";
 
-            $smsService->send($child->phone, $message);
+            $smsService->send($child->phone, $message, $child->carrier);
             $this->info("Reminder sent to {$child->name} ({$count} remaining)");
         }
     }

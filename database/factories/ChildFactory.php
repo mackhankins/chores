@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Carrier;
 use App\Models\Child;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,6 +16,7 @@ class ChildFactory extends Factory
         return [
             'name' => fake()->firstName(),
             'phone' => fake()->optional()->e164PhoneNumber(),
+            'carrier' => fake()->optional()->randomElement(Carrier::cases()),
             'pin' => fake()->numerify('####'),
             'avatar_color' => fake()->randomElement([
                 '#EF4444', '#F97316', '#EAB308', '#22C55E',

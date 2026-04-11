@@ -1,7 +1,7 @@
 # Chore Tracker - Project Plan
 
 ## Overview
-A family chore management app built with Laravel & Filament. Parents assign chores (fixed or rotating) grouped by room. Kids check in with a PIN to see and complete their chores. Future: daily SMS notifications.
+A family chore management app built with Laravel & Filament. Parents assign chores (fixed or rotating) grouped by room. Kids check in with a PIN to see and complete their chores. Daily SMS notifications via carrier email gateways.
 
 ---
 
@@ -12,7 +12,8 @@ A family chore management app built with Laravel & Filament. Parents assign chor
 |-------|------|-------|
 | id | ulid | |
 | name | string | |
-| phone | string (nullable) | For future SMS |
+| phone | string (nullable) | For SMS notifications |
+| carrier | string (nullable) | Carrier enum (verizon, att, tmobile, sprint) |
 | pin | string (4 digits) | Simple auth for kid check-in |
 | avatar_color | string | Visual identifier |
 
@@ -58,6 +59,20 @@ A family chore management app built with Laravel & Filament. Parents assign chor
 | rotation_group_id | foreign key (nullable) | Set for rotating assignments |
 | | | **One of chore_id or room_id must be set** |
 | | | **One of child_id or rotation_group_id must be set** |
+
+### Vacations
+| Field | Type | Notes |
+|-------|------|-------|
+| id | ulid | |
+| name | string (nullable) | "Grandma's house", "Spring break", etc. |
+| start_date | date | |
+| end_date | date | |
+
+### Vacation Children (pivot)
+| Field | Type | Notes |
+|-------|------|-------|
+| vacation_id | foreign key | |
+| child_id | foreign key | |
 
 ### Chore Completions
 | Field | Type | Notes |
@@ -128,21 +143,18 @@ assigned_child = members[current_position]
 - [x] Simple session-based auth (PIN → child, expires same day)
 
 ### Phase 4 — SMS Notifications
-- [x] Integrate Twilio
+- [x] Mail-to-SMS via carrier email gateways (Gmail SMTP → e.g. vtext.com for Verizon)
+- [x] Carrier enum with Verizon, AT&T, T-Mobile, Sprint gateway mappings
 - [x] Scheduled command: `chores:notify` (runs every minute)
-- [x] Morning notification: chore list + dashboard link, per-kid time
-- [x] Evening reminder: remaining chores + dashboard link, per-kid time
+- [x] Morning notification: chore count + dashboard link, per-kid time
+- [x] Evening reminder: remaining chore count + dashboard link, per-kid time
 
 ### Phase 5 — Deployment (QNAP Docker)
 - [x] Dockerfile: multi-stage build (Node for Vite, PHP 8.3 Apache)
 - [x] GitHub Actions: build & push to GHCR on push to main
 - [x] docker-compose.yml with app, scheduler, and queue services
-- [ ] Switch to bind mount volumes so database survives container recreation
-  - Change `sqlite-data:/var/www/html/database` → `/share/Container/chores/database:/var/www/html/database`
-  - Same for `app-storage` → `/share/Container/chores/storage:/var/www/html/storage`
-  - Remove named `volumes:` section at bottom
-  - Create dirs on QNAP first: `mkdir -p /share/Container/chores/{database,storage}`
-- [ ] Twilio toll-free verification pending (required to send SMS in US)
+- [x] Bind mount volumes to QNAP host paths (`/share/chores/database`, `/share/chores/storage`)
+- [x] SMS working via mail-to-SMS gateways (no Twilio dependency)
 
 #### Deployment Notes
 - **Container Station image cache**: After GitHub Actions builds a new image, you must pull the fresh image from Container Station's **Images** menu before recreating the app. It caches aggressively.
@@ -152,9 +164,14 @@ assigned_child = members[current_position]
 
 ---
 
+## Future Enhancements
+- **Seasonal chore scheduling**: Add optional `active_from` / `active_until` (month-day) fields to chores so seasonal tasks (e.g., mowing grass) auto-activate/deactivate. For now, parents toggle `is_active` manually in the admin panel.
+
+---
+
 ## Tech Stack
 - **Laravel 12** — backend framework
-- **Filament 3** — admin panel
+- **Filament 5** — admin panel
 - **SQLite** — database (easy local dev, upgrade to MySQL/Postgres later if needed)
 - **Livewire** — kid-facing check-in UI
 - **Tailwind CSS** — styling
