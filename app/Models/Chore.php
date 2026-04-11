@@ -24,6 +24,7 @@ class Chore extends Model
         'frequency',
         'frequency_start_date',
         'is_active',
+        'is_carryover_eligible',
     ];
 
     protected function casts(): array
@@ -33,12 +34,21 @@ class Chore extends Model
             'frequency' => RotationPeriod::class,
             'frequency_start_date' => 'date',
             'is_active' => 'boolean',
+            'is_carryover_eligible' => 'boolean',
         ];
     }
 
     public function isScheduledForToday(): bool
     {
-        if (! $this->isScheduledForDate()) {
+        return $this->isScheduledOn(today());
+    }
+
+    /**
+     * Check if this chore is scheduled on a given date (frequency + day of week).
+     */
+    public function isScheduledOn(Carbon $date): bool
+    {
+        if (! $this->isScheduledForDate($date)) {
             return false;
         }
 
@@ -46,7 +56,7 @@ class Chore extends Model
             return true;
         }
 
-        return in_array(strtolower(now()->format('l')), $this->days_of_week);
+        return in_array(strtolower($date->format('l')), $this->days_of_week);
     }
 
     /**
@@ -88,5 +98,10 @@ class Chore extends Model
     public function completions(): HasMany
     {
         return $this->hasMany(ChoreCompletion::class);
+    }
+
+    public function misses(): HasMany
+    {
+        return $this->hasMany(ChoreMiss::class);
     }
 }

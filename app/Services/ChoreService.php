@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Child;
 use App\Models\Chore;
 use App\Models\ChoreAssignment;
+use App\Models\ChoreMiss;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class ChoreService
@@ -22,6 +24,16 @@ class ChoreService
      */
     public function getTodaysChores(): Collection
     {
+        return $this->getChoresForDate(today());
+    }
+
+    /**
+     * Get chores scheduled for a specific date.
+     *
+     * @return Collection<int, array{chore: Chore, assignment: ChoreAssignment, child: ?Child}>
+     */
+    public function getChoresForDate(Carbon $date): Collection
+    {
         $assignments = ChoreAssignment::query()
             ->with(['chore.room', 'room.chores', 'child', 'rotationGroup.members'])
             ->get();
@@ -34,14 +46,14 @@ class ChoreService
         $results = collect();
 
         foreach ($choreAssignments as $assignment) {
-            if (! $assignment->chore?->is_active || ! $assignment->chore->isScheduledForToday()) {
+            if (! $assignment->chore?->is_active || ! $assignment->chore->isScheduledOn($date)) {
                 continue;
             }
 
             $results->push([
                 'chore' => $assignment->chore,
                 'assignment' => $assignment,
-                'child' => $this->resolveChild($assignment),
+                'child' => $this->resolveChild($assignment, $date),
             ]);
         }
 
@@ -51,7 +63,7 @@ class ChoreService
             }
 
             foreach ($assignment->room->chores as $chore) {
-                if (! $chore->is_active || ! $chore->isScheduledForToday()) {
+                if (! $chore->is_active || ! $chore->isScheduledOn($date)) {
                     continue;
                 }
 
@@ -62,7 +74,7 @@ class ChoreService
                 $results->push([
                     'chore' => $chore,
                     'assignment' => $assignment,
-                    'child' => $this->resolveChild($assignment),
+                    'child' => $this->resolveChild($assignment, $date),
                 ]);
             }
         }
@@ -77,26 +89,55 @@ class ChoreService
      */
     public function getTodaysChoresForChild(Child $child): Collection
     {
-        if ($child->isOnVacation()) {
+        return $this->getChoresForChildOnDate($child, today());
+    }
+
+    /**
+     * Get chores for a specific child on a specific date.
+     *
+     * @return Collection<int, array{chore: Chore, assignment: ChoreAssignment}>
+     */
+    public function getChoresForChildOnDate(Child $child, Carbon $date): Collection
+    {
+        if ($child->isOnVacation($date)) {
             return collect();
         }
 
-        return $this->getTodaysChores()
+        return $this->getChoresForDate($date)
             ->filter(fn (array $item) => $item['child']?->id === $child->id)
             ->values();
     }
 
     /**
+     * Get outstanding carryover chores for a child (missed and not yet completed).
+     *
+     * @return Collection<int, ChoreMiss>
+     */
+    public function getCarryoverChoresForChild(Child $child): Collection
+    {
+        $carryoverDays = config('chores.carryover_days', 7);
+        $cutoffDate = today()->subDays($carryoverDays);
+
+        return ChoreMiss::query()
+            ->with('chore.room')
+            ->where('child_id', $child->id)
+            ->whereNull('completed_at')
+            ->where('missed_date', '>=', $cutoffDate)
+            ->orderBy('missed_date')
+            ->get();
+    }
+
+    /**
      * Resolve which child is responsible for an assignment (fixed or rotated).
      */
-    public function resolveChild(ChoreAssignment $assignment): ?Child
+    public function resolveChild(ChoreAssignment $assignment, ?Carbon $date = null): ?Child
     {
         if ($assignment->child) {
             return $assignment->child;
         }
 
         if ($assignment->rotationGroup) {
-            return $this->rotationService->getCurrentChild($assignment->rotationGroup);
+            return $this->rotationService->getCurrentChild($assignment->rotationGroup, $date);
         }
 
         return null;

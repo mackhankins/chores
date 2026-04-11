@@ -51,6 +51,9 @@ class ChoreForm
                     ->helperText('Reference date for calculating which weeks/months this chore is active.'),
                 Toggle::make('is_active')
                     ->default(true),
+                Toggle::make('is_carryover_eligible')
+                    ->label('Carry over if missed')
+                    ->helperText('When enabled, this chore will reappear on future days until completed.'),
             ]);
     }
 }

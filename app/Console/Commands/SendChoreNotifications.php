@@ -107,16 +107,25 @@ class SendChoreNotifications extends Command
 
         foreach ($children as $child) {
             $chores = $choreService->getTodaysChoresForChild($child);
+            $carryover = $choreService->getCarryoverChoresForChild($child);
 
-            if ($chores->isEmpty()) {
+            $todayCount = $chores->count();
+            $carryoverCount = $carryover->count();
+            $totalCount = $todayCount + $carryoverCount;
+
+            if ($totalCount === 0) {
                 continue;
             }
 
-            $count = $chores->count();
+            $message = "Good morning {$child->name}! You have {$totalCount} "
+                .($totalCount === 1 ? 'chore' : 'chores')
+                .' today';
 
-            $message = "Good morning {$child->name}! You have {$count} "
-                .($count === 1 ? 'chore' : 'chores')
-                ." today. {$dashboardUrl}";
+            if ($carryoverCount > 0) {
+                $message .= " ({$carryoverCount} to catch up on)";
+            }
+
+            $message .= ". {$dashboardUrl}";
 
             $smsService->send($child->phone, $message, $child->carrier);
             $this->info("Morning notification sent to {$child->name}");
@@ -138,10 +147,7 @@ class SendChoreNotifications extends Command
 
         foreach ($children as $child) {
             $chores = $choreService->getTodaysChoresForChild($child);
-
-            if ($chores->isEmpty()) {
-                continue;
-            }
+            $carryover = $choreService->getCarryoverChoresForChild($child);
 
             $completedIds = ChoreCompletion::query()
                 ->where('child_id', $child->id)
@@ -149,22 +155,23 @@ class SendChoreNotifications extends Command
                 ->pluck('chore_id')
                 ->toArray();
 
-            $remaining = $chores->filter(
+            $remainingToday = $chores->filter(
                 fn (array $item) => ! in_array($item['chore']->id, $completedIds)
-            );
+            )->count();
 
-            if ($remaining->isEmpty()) {
+            $remainingCarryover = $carryover->count();
+            $totalRemaining = $remainingToday + $remainingCarryover;
+
+            if ($totalRemaining === 0) {
                 continue;
             }
 
-            $count = $remaining->count();
-
-            $message = "Hey {$child->name}, you still have {$count} "
-                .($count === 1 ? 'chore' : 'chores')
+            $message = "Hey {$child->name}, you still have {$totalRemaining} "
+                .($totalRemaining === 1 ? 'chore' : 'chores')
                 ." left. Finish up! {$dashboardUrl}";
 
             $smsService->send($child->phone, $message, $child->carrier);
-            $this->info("Reminder sent to {$child->name} ({$count} remaining)");
+            $this->info("Reminder sent to {$child->name} ({$totalRemaining} remaining)");
         }
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Models\Child;
 use App\Models\ChoreCompletion;
+use App\Models\ChoreMiss;
 use App\Services\ChoreService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -68,6 +69,45 @@ class extends Component
                 'id' => $item['chore']->id,
                 'name' => $item['chore']->name,
                 'completed' => in_array($item['chore']->id, $completedIds),
+                'is_carryover' => false,
+                'missed_date' => null,
+            ];
+        }
+
+        return $grouped;
+    }
+
+    #[Computed]
+    public function carryoverChores(): array
+    {
+        $child = $this->child();
+        if (! $child) {
+            return [];
+        }
+
+        $service = app(ChoreService::class);
+        $misses = $service->getCarryoverChoresForChild($child);
+
+        $grouped = [];
+        foreach ($misses as $miss) {
+            if (! $miss->chore || ! $miss->chore->room) {
+                continue;
+            }
+
+            $roomName = $miss->chore->room->name;
+            $roomIcon = $miss->chore->room->icon ?? '';
+
+            if (! isset($grouped[$roomName])) {
+                $grouped[$roomName] = [
+                    'icon' => $roomIcon,
+                    'chores' => [],
+                ];
+            }
+
+            $grouped[$roomName]['chores'][] = [
+                'id' => $miss->id,
+                'chore_name' => $miss->chore->name,
+                'missed_date' => $miss->missed_date->format('D n/j'),
             ];
         }
 
@@ -98,6 +138,26 @@ class extends Component
         }
 
         unset($this->choresByRoom);
+    }
+
+    public function completeCarryover(string $missId): void
+    {
+        $child = $this->child();
+        if (! $child) {
+            return;
+        }
+
+        $miss = ChoreMiss::query()
+            ->where('id', $missId)
+            ->where('child_id', $child->id)
+            ->whereNull('completed_at')
+            ->first();
+
+        if ($miss) {
+            $miss->update(['completed_at' => now()]);
+        }
+
+        unset($this->carryoverChores);
     }
 
     public function logout(): void
@@ -137,6 +197,11 @@ class extends Component
                         }
                     }
                 }
+                $carryoverCount = 0;
+                foreach ($this->carryoverChores as $room) {
+                    $carryoverCount += count($room['chores']);
+                }
+                $totalChores += $carryoverCount;
                 $progress = $totalChores > 0 ? round(($completedChores / $totalChores) * 100) : 0;
             @endphp
 
@@ -159,6 +224,39 @@ class extends Component
 
         {{-- Chores by room --}}
         <div class="flex-1 px-5 pb-8">
+            {{-- Carryover section --}}
+            @if (count($this->carryoverChores) > 0)
+                <div class="mb-6">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Catch Up</span>
+                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">{{ $carryoverCount }}</span>
+                    </div>
+                    @foreach ($this->carryoverChores as $roomName => $room)
+                        <div class="mb-3">
+                            <h2 class="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+                                {{ $room['icon'] }} {{ $roomName }}
+                            </h2>
+                            <div class="flex flex-col gap-2">
+                                @foreach ($room['chores'] as $chore)
+                                    <button
+                                        wire:click="completeCarryover('{{ $chore['id'] }}')"
+                                        class="flex w-full items-center gap-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm transition-transform active:scale-[0.97]"
+                                    >
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400">
+                                        </div>
+                                        <div class="text-left">
+                                            <span class="text-lg font-medium">{{ $chore['chore_name'] }}</span>
+                                            <span class="block text-xs text-amber-600">From {{ $chore['missed_date'] }}</span>
+                                        </div>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Today's chores --}}
             @forelse ($this->choresByRoom as $roomName => $room)
                 <div class="mb-5">
                     <h2 class="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -185,11 +283,13 @@ class extends Component
                     </div>
                 </div>
             @empty
-                <div class="flex flex-1 flex-col items-center justify-center py-20 text-center">
-                    <p class="text-5xl">🎉</p>
-                    <p class="mt-4 text-xl font-bold">No chores today!</p>
-                    <p class="text-gray-500">Enjoy your free time</p>
-                </div>
+                @if (count($this->carryoverChores) === 0)
+                    <div class="flex flex-1 flex-col items-center justify-center py-20 text-center">
+                        <p class="text-5xl">🎉</p>
+                        <p class="mt-4 text-xl font-bold">No chores today!</p>
+                        <p class="text-gray-500">Enjoy your free time</p>
+                    </div>
+                @endif
             @endforelse
         </div>
     @endif
