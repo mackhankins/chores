@@ -1,6 +1,6 @@
 x-env: &shared-env
   APP_ENV: production
-  APP_DEBUG: "false"
+  APP_DEBUG: "true"
   APP_URL: http://192.168.40.103:8088
   APP_KEY: # your APP_KEY here
   DB_CONNECTION: sqlite
