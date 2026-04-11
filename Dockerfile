@@ -1,12 +1,19 @@
-# Stage 1: Build frontend assets
+# Stage 1: Install PHP dependencies
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
+# Stage 2: Build frontend assets
 FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+COPY --from=vendor /app/vendor ./vendor
 RUN npm run build
 
-# Stage 2: Production image
+# Stage 3: Production image
 FROM php:8.3-apache
 
 # Install system dependencies and PHP extensions
