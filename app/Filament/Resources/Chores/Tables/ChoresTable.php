@@ -39,6 +39,10 @@ class ChoresTable
 
                         return empty($parts) ? 'Daily' : implode(' · ', $parts);
                     }),
+                TextColumn::make('value')
+                    ->money('usd')
+                    ->sortable()
+                    ->placeholder('—'),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')

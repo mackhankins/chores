@@ -50,6 +50,11 @@ class Child extends Model
         return $this->hasMany(ChoreMiss::class);
     }
 
+    public function rentPayments(): HasMany
+    {
+        return $this->hasMany(RentPayment::class);
+    }
+
     public function rotationGroups(): BelongsToMany
     {
         return $this->belongsToMany(RotationGroup::class, 'rotation_group_members')

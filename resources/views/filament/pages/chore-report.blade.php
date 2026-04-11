@@ -108,7 +108,12 @@
                                     <span class="{{ $stat['balance'] > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400' }} font-medium">
                                         ${{ number_format($stat['balance'], 2) }}
                                     </span>
-                                    <span class="block text-xs text-gray-400">of ${{ number_format($stat['rent'], 2) }} rent</span>
+                                    <span class="block text-xs text-gray-400">
+                                        ${{ number_format($stat['rent'], 2) }} rent
+                                        @if ($stat['paid'] > 0)
+                                            · ${{ number_format($stat['paid'], 2) }} paid
+                                        @endif
+                                    </span>
                                 @elseif ($stat['earned'] > 0)
                                     <span class="text-green-600 dark:text-green-400 font-medium">${{ number_format($stat['earned'], 2) }}</span>
                                 @else

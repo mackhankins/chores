@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Child;
 use App\Models\ChoreCompletion;
+use App\Models\RentPayment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
@@ -76,6 +77,13 @@ class ChoreReportingService
 
             $rent = $child->monthly_rent ? (float) $child->monthly_rent : null;
 
+            $paid = $rent !== null
+                ? (float) RentPayment::query()
+                    ->where('child_id', $child->id)
+                    ->whereBetween('paid_date', [$startDate, $endDate])
+                    ->sum('amount')
+                : 0;
+
             return [
                 'child' => $child,
                 'total' => $stats['total'],
@@ -84,7 +92,8 @@ class ChoreReportingService
                 'rate' => $stats['rate'],
                 'earned' => $earned,
                 'rent' => $rent,
-                'balance' => $rent !== null ? max(0, $rent - $earned) : null,
+                'paid' => $paid,
+                'balance' => $rent !== null ? max(0, $rent - $earned - $paid) : null,
             ];
         });
     }

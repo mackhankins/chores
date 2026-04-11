@@ -4,6 +4,7 @@ use App\Models\Child;
 use App\Models\Chore;
 use App\Models\ChoreCompletion;
 use App\Models\ChoreMiss;
+use App\Models\RentPayment;
 use App\Services\ChoreService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -129,11 +130,20 @@ class extends Component
             ->sum('earned_amount');
 
         $rent = $child->monthly_rent ? (float) $child->monthly_rent : null;
-        $balance = $rent !== null ? max(0, $rent - $earned) : $earned;
+
+        $paid = $rent !== null
+            ? (float) RentPayment::query()
+                ->where('child_id', $child->id)
+                ->whereBetween('paid_date', [today()->startOfMonth(), today()->endOfMonth()])
+                ->sum('amount')
+            : 0;
+
+        $balance = $rent !== null ? max(0, $rent - $earned - $paid) : $earned;
 
         return [
             'earned' => $earned,
             'rent' => $rent,
+            'paid' => $paid,
             'balance' => $balance,
         ];
     }
@@ -269,9 +279,15 @@ class extends Component
                             <span class="font-bold text-gray-500">${{ number_format($earnings['rent'], 2) }}</span>
                         </div>
                         <div class="mt-1 flex items-center justify-between text-sm">
-                            <span class="font-medium">Earned</span>
+                            <span class="font-medium">Chores</span>
                             <span class="font-bold text-green-600">-${{ number_format($earnings['earned'], 2) }}</span>
                         </div>
+                        @if ($earnings['paid'] > 0)
+                            <div class="mt-1 flex items-center justify-between text-sm">
+                                <span class="font-medium">Paid</span>
+                                <span class="font-bold text-green-600">-${{ number_format($earnings['paid'], 2) }}</span>
+                            </div>
+                        @endif
                         <div class="mt-2 border-t border-gray-100 pt-2 flex items-center justify-between text-sm">
                             <span class="font-semibold">{{ $earnings['balance'] > 0 ? 'You owe' : 'Paid off!' }}</span>
                             <span class="font-bold {{ $earnings['balance'] > 0 ? 'text-red-500' : 'text-green-600' }}">${{ number_format($earnings['balance'], 2) }}</span>
