@@ -11,6 +11,10 @@
 /.phpunit.cache
 /.vscode
 /.zed
+.claude/skills
+.cursor
+.junie
+.mcp.json
 /auth.json
 /node_modules
 /public/build
