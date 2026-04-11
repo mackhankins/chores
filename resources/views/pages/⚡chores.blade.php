@@ -121,7 +121,7 @@ class extends Component
     {
         $child = $this->child();
         if (! $child) {
-            return ['earned' => 0, 'rent' => null, 'balance' => 0];
+            return ['earned' => 0, 'rent' => null, 'paid' => 0, 'balance' => 0, 'potential' => 0];
         }
 
         $earned = (float) ChoreCompletion::query()
@@ -140,11 +140,29 @@ class extends Component
 
         $balance = $rent !== null ? max(0, $rent - $earned - $paid) : $earned;
 
+        // Calculate potential earnings for the full month
+        $service = app(ChoreService::class);
+        $potential = 0.0;
+        $monthStart = today()->startOfMonth();
+        $monthEnd = today()->endOfMonth();
+
+        foreach (\Carbon\CarbonPeriod::create($monthStart, $monthEnd) as $date) {
+            if ($child->isOnVacation($date)) {
+                continue;
+            }
+
+            $dayChores = $service->getChoresForChildOnDate($child, $date);
+            foreach ($dayChores as $item) {
+                $potential += (float) ($item['chore']->value ?? 0);
+            }
+        }
+
         return [
             'earned' => $earned,
             'rent' => $rent,
             'paid' => $paid,
             'balance' => $balance,
+            'potential' => $potential,
         ];
     }
 
@@ -274,29 +292,38 @@ class extends Component
             @if ($earnings['earned'] > 0 || $earnings['rent'] !== null)
                 <div class="mt-3 rounded-2xl bg-white p-4 shadow-sm">
                     @if ($earnings['rent'] !== null)
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="font-medium">Rent</span>
-                            <span class="font-bold text-gray-500">${{ number_format($earnings['rent'], 2) }}</span>
-                        </div>
-                        <div class="mt-1 flex items-center justify-between text-sm">
-                            <span class="font-medium">Chores</span>
-                            <span class="font-bold text-green-600">-${{ number_format($earnings['earned'], 2) }}</span>
-                        </div>
-                        @if ($earnings['paid'] > 0)
-                            <div class="mt-1 flex items-center justify-between text-sm">
-                                <span class="font-medium">Paid</span>
-                                <span class="font-bold text-green-600">-${{ number_format($earnings['paid'], 2) }}</span>
-                            </div>
-                        @endif
-                        <div class="mt-2 border-t border-gray-100 pt-2 flex items-center justify-between text-sm">
-                            <span class="font-semibold">{{ $earnings['balance'] > 0 ? 'You owe' : 'Paid off!' }}</span>
+                        @php
+                            $totalCredit = $earnings['earned'] + $earnings['paid'];
+                            $rentProgress = $earnings['rent'] > 0 ? min(100, round(($totalCredit / $earnings['rent']) * 100)) : 100;
+                        @endphp
+                        <div class="mb-2 flex items-center justify-between text-sm">
+                            <span class="font-medium">{{ $earnings['balance'] > 0 ? 'Rent' : 'Rent — Paid off!' }}</span>
                             <span class="font-bold {{ $earnings['balance'] > 0 ? 'text-red-500' : 'text-green-600' }}">${{ number_format($earnings['balance'], 2) }}</span>
                         </div>
+                        <div class="h-3 overflow-hidden rounded-full bg-red-100">
+                            <div
+                                class="h-full rounded-full bg-green-500 transition-all duration-500"
+                                style="width: {{ $rentProgress }}%"
+                            ></div>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400">${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</p>
                     @else
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="font-medium">Earned this month</span>
+                        @php
+                            $earnProgress = $earnings['potential'] > 0 ? min(100, round(($earnings['earned'] / $earnings['potential']) * 100)) : 0;
+                        @endphp
+                        <div class="mb-2 flex items-center justify-between text-sm">
+                            <span class="font-medium">Earned</span>
                             <span class="font-bold text-green-600">${{ number_format($earnings['earned'], 2) }}</span>
                         </div>
+                        <div class="h-3 overflow-hidden rounded-full bg-gray-200">
+                            <div
+                                class="h-full rounded-full bg-green-500 transition-all duration-500"
+                                style="width: {{ $earnProgress }}%"
+                            ></div>
+                        </div>
+                        @if ($earnings['potential'] > 0)
+                            <p class="mt-1 text-xs text-gray-400">${{ number_format($earnings['potential'], 2) }} possible this month</p>
+                        @endif
                     @endif
                 </div>
             @endif
