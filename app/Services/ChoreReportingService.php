@@ -69,12 +69,22 @@ class ChoreReportingService
         return Child::all()->map(function (Child $child) use ($startDate, $endDate) {
             $stats = $this->getCompletionStats($child, $startDate, $endDate);
 
+            $earned = (float) ChoreCompletion::query()
+                ->where('child_id', $child->id)
+                ->whereBetween('completed_date', [$startDate, $endDate])
+                ->sum('earned_amount');
+
+            $rent = $child->monthly_rent ? (float) $child->monthly_rent : null;
+
             return [
                 'child' => $child,
                 'total' => $stats['total'],
                 'completed' => $stats['completed'],
                 'missed' => $stats['total'] - $stats['completed'],
                 'rate' => $stats['rate'],
+                'earned' => $earned,
+                'rent' => $rent,
+                'balance' => $rent !== null ? max(0, $rent - $earned) : null,
             ];
         });
     }

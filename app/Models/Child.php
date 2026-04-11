@@ -24,12 +24,14 @@ class Child extends Model
         'avatar_color',
         'notify_morning_at',
         'notify_reminder_at',
+        'monthly_rent',
     ];
 
     protected function casts(): array
     {
         return [
             'carrier' => Carrier::class,
+            'monthly_rent' => 'decimal:2',
         ];
     }
 

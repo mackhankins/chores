@@ -17,12 +17,14 @@ class ChoreCompletion extends Model
         'chore_id',
         'child_id',
         'completed_date',
+        'earned_amount',
     ];
 
     protected function casts(): array
     {
         return [
             'completed_date' => 'date',
+            'earned_amount' => 'decimal:2',
         ];
     }
 

@@ -49,6 +49,12 @@ class ChoreForm
                     ->required(fn ($get) => $get('frequency') !== null)
                     ->visible(fn ($get) => $get('frequency') !== null)
                     ->helperText('Reference date for calculating which weeks/months this chore is active.'),
+                TextInput::make('value')
+                    ->label('Value ($)')
+                    ->numeric()
+                    ->prefix('$')
+                    ->step('0.01')
+                    ->helperText('Amount earned when this chore is completed. Leave empty for no earnings.'),
                 Toggle::make('is_active')
                     ->default(true),
                 Toggle::make('is_carryover_eligible')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Child;
+use App\Models\Chore;
 use App\Models\ChoreCompletion;
 use App\Models\ChoreMiss;
 use App\Services\ChoreService;
@@ -114,6 +115,29 @@ class extends Component
         return $grouped;
     }
 
+    #[Computed]
+    public function monthlyEarnings(): array
+    {
+        $child = $this->child();
+        if (! $child) {
+            return ['earned' => 0, 'rent' => null, 'balance' => 0];
+        }
+
+        $earned = (float) ChoreCompletion::query()
+            ->where('child_id', $child->id)
+            ->whereBetween('completed_date', [today()->startOfMonth(), today()->endOfMonth()])
+            ->sum('earned_amount');
+
+        $rent = $child->monthly_rent ? (float) $child->monthly_rent : null;
+        $balance = $rent !== null ? max(0, $rent - $earned) : $earned;
+
+        return [
+            'earned' => $earned,
+            'rent' => $rent,
+            'balance' => $balance,
+        ];
+    }
+
     public function toggleChore(string $choreId): void
     {
         $child = $this->child();
@@ -130,14 +154,18 @@ class extends Component
         if ($existing) {
             $existing->delete();
         } else {
+            $chore = Chore::find($choreId);
+
             ChoreCompletion::create([
                 'chore_id' => $choreId,
                 'child_id' => $child->id,
                 'completed_date' => today(),
+                'earned_amount' => $chore?->value,
             ]);
         }
 
         unset($this->choresByRoom);
+        unset($this->monthlyEarnings);
     }
 
     public function completeCarryover(string $missId): void
@@ -155,9 +183,19 @@ class extends Component
 
         if ($miss) {
             $miss->update(['completed_at' => now()]);
+
+            if ($miss->chore?->value) {
+                ChoreCompletion::create([
+                    'chore_id' => $miss->chore_id,
+                    'child_id' => $child->id,
+                    'completed_date' => today(),
+                    'earned_amount' => $miss->chore->value,
+                ]);
+            }
         }
 
         unset($this->carryoverChores);
+        unset($this->monthlyEarnings);
     }
 
     public function logout(): void
@@ -220,6 +258,32 @@ class extends Component
                     <p class="mt-2 text-center text-sm font-bold text-green-600">All done! Great job! 🎉</p>
                 @endif
             </div>
+
+            {{-- Earnings --}}
+            @php $earnings = $this->monthlyEarnings; @endphp
+            @if ($earnings['earned'] > 0 || $earnings['rent'] !== null)
+                <div class="mt-3 rounded-2xl bg-white p-4 shadow-sm">
+                    @if ($earnings['rent'] !== null)
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-medium">Rent</span>
+                            <span class="font-bold text-gray-500">${{ number_format($earnings['rent'], 2) }}</span>
+                        </div>
+                        <div class="mt-1 flex items-center justify-between text-sm">
+                            <span class="font-medium">Earned</span>
+                            <span class="font-bold text-green-600">-${{ number_format($earnings['earned'], 2) }}</span>
+                        </div>
+                        <div class="mt-2 border-t border-gray-100 pt-2 flex items-center justify-between text-sm">
+                            <span class="font-semibold">{{ $earnings['balance'] > 0 ? 'You owe' : 'Paid off!' }}</span>
+                            <span class="font-bold {{ $earnings['balance'] > 0 ? 'text-red-500' : 'text-green-600' }}">${{ number_format($earnings['balance'], 2) }}</span>
+                        </div>
+                    @else
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-medium">Earned this month</span>
+                            <span class="font-bold text-green-600">${{ number_format($earnings['earned'], 2) }}</span>
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- Chores by room --}}

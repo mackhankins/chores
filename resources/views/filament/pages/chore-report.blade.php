@@ -65,7 +65,9 @@
                         <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Assigned</th>
                         <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Completed</th>
                         <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Missed</th>
-                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 sm:pe-6 dark:text-gray-400">Rate</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Rate</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Earned</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 sm:pe-6 dark:text-gray-400">Balance</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-white/5">
@@ -80,7 +82,7 @@
                             <td class="px-4 py-3.5 text-end text-sm tabular-nums text-gray-600 dark:text-gray-400">{{ $stat['total'] }}</td>
                             <td class="px-4 py-3.5 text-end text-sm tabular-nums text-gray-600 dark:text-gray-400">{{ $stat['completed'] }}</td>
                             <td class="px-4 py-3.5 text-end text-sm tabular-nums text-gray-600 dark:text-gray-400">{{ $stat['missed'] }}</td>
-                            <td class="px-4 py-3.5 text-end sm:pe-6">
+                            <td class="px-4 py-3.5 text-end">
                                 @php
                                     $badgeColor = match(true) {
                                         $stat['rate'] >= 80 => 'success',
@@ -93,6 +95,25 @@
                                         {{ $stat['rate'] }}%
                                     </x-filament::badge>
                                 </div>
+                            </td>
+                            <td class="px-4 py-3.5 text-end text-sm tabular-nums text-green-600 dark:text-green-400">
+                                @if ($stat['earned'] > 0)
+                                    ${{ number_format($stat['earned'], 2) }}
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3.5 text-end text-sm tabular-nums sm:pe-6">
+                                @if ($stat['rent'] !== null)
+                                    <span class="{{ $stat['balance'] > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400' }} font-medium">
+                                        ${{ number_format($stat['balance'], 2) }}
+                                    </span>
+                                    <span class="block text-xs text-gray-400">of ${{ number_format($stat['rent'], 2) }} rent</span>
+                                @elseif ($stat['earned'] > 0)
+                                    <span class="text-green-600 dark:text-green-400 font-medium">${{ number_format($stat['earned'], 2) }}</span>
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

@@ -25,6 +25,7 @@ class Chore extends Model
         'frequency_start_date',
         'is_active',
         'is_carryover_eligible',
+        'value',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class Chore extends Model
             'frequency_start_date' => 'date',
             'is_active' => 'boolean',
             'is_carryover_eligible' => 'boolean',
+            'value' => 'decimal:2',
         ];
     }
 

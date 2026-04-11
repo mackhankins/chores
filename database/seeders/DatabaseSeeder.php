@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#3B82F6',
             'notify_morning_at' => '07:00',
             'notify_reminder_at' => '18:00',
+            'monthly_rent' => 200.00,
         ]);
 
         $sam = Child::create([
@@ -62,11 +63,11 @@ class DatabaseSeeder extends Seeder
 
         // ── Chores ─────────────────────────────────────────────
         // Kitchen (daily)
-        $wipeCounters = Chore::create(['name' => 'Wipe counters', 'room_id' => $kitchen->id]);
-        $sweepKitchen = Chore::create(['name' => 'Sweep floor', 'room_id' => $kitchen->id]);
-        $loadDishwasher = Chore::create(['name' => 'Load dishwasher', 'room_id' => $kitchen->id]);
-        $unloadDishwasher = Chore::create(['name' => 'Unload dishwasher', 'room_id' => $kitchen->id]);
-        $trash = Chore::create(['name' => 'Take out trash', 'room_id' => $kitchen->id]);
+        $wipeCounters = Chore::create(['name' => 'Wipe counters', 'room_id' => $kitchen->id, 'value' => 1.00]);
+        $sweepKitchen = Chore::create(['name' => 'Sweep floor', 'room_id' => $kitchen->id, 'value' => 1.00]);
+        $loadDishwasher = Chore::create(['name' => 'Load dishwasher', 'room_id' => $kitchen->id, 'value' => 1.50]);
+        $unloadDishwasher = Chore::create(['name' => 'Unload dishwasher', 'room_id' => $kitchen->id, 'value' => 1.50]);
+        $trash = Chore::create(['name' => 'Take out trash', 'room_id' => $kitchen->id, 'value' => 1.00]);
 
         // Guest Bathroom (daily)
         $cleanToilet = Chore::create(['name' => 'Clean toilet', 'room_id' => $guestBathroom->id]);
@@ -106,9 +107,9 @@ class DatabaseSeeder extends Seeder
 
         // Kid room chores (daily, per-child)
         foreach ([$alexRoom, $samRoom, $jordanRoom] as $room) {
-            Chore::create(['name' => 'Make bed', 'room_id' => $room->id]);
-            Chore::create(['name' => 'Pick up floor', 'room_id' => $room->id]);
-            Chore::create(['name' => 'Put away clothes', 'room_id' => $room->id]);
+            Chore::create(['name' => 'Make bed', 'room_id' => $room->id, 'value' => 0.50]);
+            Chore::create(['name' => 'Pick up floor', 'room_id' => $room->id, 'value' => 0.50]);
+            Chore::create(['name' => 'Put away clothes', 'room_id' => $room->id, 'value' => 0.50]);
         }
 
         // ── Rotation Groups ────────────────────────────────────
@@ -169,6 +170,7 @@ class DatabaseSeeder extends Seeder
                 'chore_id' => $chore->id,
                 'child_id' => $alex->id,
                 'completed_date' => today(),
+                'earned_amount' => $chore->value,
             ]);
         }
     }

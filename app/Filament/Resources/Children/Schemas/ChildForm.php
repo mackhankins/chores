@@ -58,6 +58,12 @@ class ChildForm
                     ->numeric(),
                 ColorPicker::make('avatar_color')
                     ->required(),
+                TextInput::make('monthly_rent')
+                    ->label('Monthly Rent ($)')
+                    ->numeric()
+                    ->prefix('$')
+                    ->step('0.01')
+                    ->helperText('If set, chore earnings deduct from this amount. Leave empty for earnings-only mode.'),
                 Section::make('SMS Notifications')
                     ->description('Requires a phone number and carrier. Leave times empty to disable.')
                     ->schema([
