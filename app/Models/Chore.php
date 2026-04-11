@@ -52,7 +52,7 @@ class Chore extends Model
             return false;
         }
 
-        if ($this->days_of_week === null) {
+        if (empty($this->days_of_week)) {
             return true;
         }
 
