@@ -10,6 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        [x-cloak] { display: none !important; }
         body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     </style>
 </head>

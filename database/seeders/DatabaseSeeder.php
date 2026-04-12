@@ -65,14 +65,15 @@ class DatabaseSeeder extends Seeder
 
         // ── Chores ─────────────────────────────────────────────
         // Kitchen (daily)
-        $wipeCounters = Chore::create(['name' => 'Wipe counters', 'room_id' => $kitchen->id, 'value' => 1.00]);
+        $wipeCounters = Chore::create(['name' => 'Wipe counters', 'room_id' => $kitchen->id, 'value' => 1.00, 'description' => 'Use the spray cleaner under the sink. Wipe down all counters, the stove top, and around the sink. Rinse the sponge when done.']);
         $sweepKitchen = Chore::create(['name' => 'Sweep floor', 'room_id' => $kitchen->id, 'value' => 1.00]);
-        $loadDishwasher = Chore::create(['name' => 'Load dishwasher', 'room_id' => $kitchen->id, 'value' => 1.50]);
+        $loadDishwasher = Chore::create(['name' => 'Load dishwasher', 'room_id' => $kitchen->id, 'value' => 1.50, 'description' => 'Rinse food off plates first. Big stuff on the bottom, cups and bowls on top. Add a detergent pod and start it.']);
         $unloadDishwasher = Chore::create(['name' => 'Unload dishwasher', 'room_id' => $kitchen->id, 'value' => 1.50]);
-        $trash = Chore::create(['name' => 'Take out trash', 'room_id' => $kitchen->id, 'value' => 1.00]);
+        $trash = Chore::create(['name' => 'Take out trash', 'room_id' => $kitchen->id, 'value' => 1.00, 'description' => 'Tie the bag, take it to the bin outside, and put a fresh bag in the can.']);
+        Chore::create(['name' => 'Wipe down the inside of the refrigerator', 'room_id' => $kitchen->id, 'value' => 2.50, 'description' => 'Take out anything expired, wipe each shelf with a damp cloth, and put everything back.']);
 
         // Guest Bathroom (daily)
-        $cleanToilet = Chore::create(['name' => 'Clean toilet', 'room_id' => $guestBathroom->id, 'value' => 2.00]);
+        $cleanToilet = Chore::create(['name' => 'Clean toilet', 'room_id' => $guestBathroom->id, 'value' => 2.00, 'description' => 'Use the toilet brush and blue cleaner inside the bowl. Wipe the seat and lid with a disinfectant wipe.']);
         $wipeMirror = Chore::create(['name' => 'Wipe mirror', 'room_id' => $guestBathroom->id, 'value' => 0.75]);
         Chore::create(['name' => 'Sweep floor', 'room_id' => $guestBathroom->id, 'value' => 1.00]);
 
@@ -111,7 +112,7 @@ class DatabaseSeeder extends Seeder
 
         // Kid room chores (daily, per-child)
         foreach ([$alexRoom, $samRoom, $jordanRoom] as $room) {
-            Chore::create(['name' => 'Make bed', 'room_id' => $room->id, 'value' => 0.50]);
+            Chore::create(['name' => 'Make bed', 'room_id' => $room->id, 'value' => 0.50, 'description' => 'Pull the sheets smooth, fluff the pillows, and lay the comforter flat.']);
             Chore::create(['name' => 'Pick up floor', 'room_id' => $room->id, 'value' => 0.50]);
             Chore::create(['name' => 'Put away clothes', 'room_id' => $room->id, 'value' => 0.50]);
         }

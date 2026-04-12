@@ -70,6 +70,7 @@ class extends Component
             $grouped[$roomName]['chores'][] = [
                 'id' => $item['chore']->id,
                 'name' => $item['chore']->name,
+                'description' => $item['chore']->description,
                 'completed' => in_array($item['chore']->id, $completedIds),
                 'is_carryover' => false,
                 'missed_date' => null,
@@ -324,10 +325,10 @@ class extends Component
                         ></div>
                     </div>
                     <div class="mt-1 flex items-center justify-between text-xs text-gray-400">
-                        <span>${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</span>
+                        <span>${{ number_format($totalCredit, 2) }} earned</span>
                         <span>
                             @if ($potentialSavings > 0 && $earnings['balance'] > 0)
-                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} possible</span>
+                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} left</span>
                             @endif
                             @if ($earnings['missed'] > 0)
                                 <span class="text-red-400">· ${{ number_format($earnings['missed'], 2) }} missed</span>
@@ -400,21 +401,50 @@ class extends Component
                     </h2>
                     <div class="flex flex-col gap-2">
                         @foreach ($room['chores'] as $chore)
-                            <button
-                                wire:click="toggleChore('{{ $chore['id'] }}')"
-                                class="flex w-full items-center gap-4 rounded-2xl bg-white p-5 shadow-sm transition-transform active:scale-[0.97] {{ $chore['completed'] ? 'opacity-50' : '' }}"
+                            <div
+                                x-data="{ open: false }"
+                                class="rounded-2xl bg-white shadow-sm {{ $chore['completed'] ? 'opacity-50' : '' }}"
                             >
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all {{ $chore['completed'] ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300' }}">
-                                    @if ($chore['completed'])
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                        </svg>
+                                <div class="flex items-stretch">
+                                    <button
+                                        wire:click="toggleChore('{{ $chore['id'] }}')"
+                                        class="flex min-w-0 flex-1 items-center gap-4 py-5 pl-5 {{ empty($chore['description']) ? 'pr-5' : 'pr-3' }} transition-transform active:scale-[0.97]"
+                                    >
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all {{ $chore['completed'] ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300' }}">
+                                            @if ($chore['completed'])
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            @endif
+                                        </div>
+                                        <span class="min-w-0 flex-1 text-left text-lg font-medium break-words {{ $chore['completed'] ? 'text-gray-400 line-through' : '' }}">
+                                            {{ $chore['name'] }}
+                                        </span>
+                                    </button>
+                                    @if (! empty($chore['description']))
+                                        <button
+                                            type="button"
+                                            @click="open = !open"
+                                            aria-label="How to"
+                                            class="flex w-12 shrink-0 items-center justify-center pr-3 text-gray-400 active:text-gray-600"
+                                        >
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
                                     @endif
                                 </div>
-                                <span class="text-left text-lg font-medium {{ $chore['completed'] ? 'text-gray-400 line-through' : '' }}">
-                                    {{ $chore['name'] }}
-                                </span>
-                            </button>
+                                @if (! empty($chore['description']))
+                                    <div
+                                        x-show="open"
+                                        x-cloak
+                                        x-transition
+                                        class="border-t border-gray-100 px-5 py-3 text-sm text-gray-600"
+                                    >
+                                        {{ $chore['description'] }}
+                                    </div>
+                                @endif
+                            </div>
                         @endforeach
                     </div>
                 </div>
