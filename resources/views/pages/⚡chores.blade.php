@@ -327,7 +327,7 @@ class extends Component
                         <span>${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</span>
                         <span>
                             @if ($potentialSavings > 0 && $earnings['balance'] > 0)
-                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} still possible</span>
+                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} possible</span>
                             @endif
                             @if ($earnings['missed'] > 0)
                                 <span class="text-red-400">· ${{ number_format($earnings['missed'], 2) }} missed</span>
