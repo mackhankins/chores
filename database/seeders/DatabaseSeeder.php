@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#22C55E',
             'notify_morning_at' => '07:00',
             'notify_reminder_at' => '17:30',
+            'monthly_rent' => 150.00,
         ]);
 
         $jordan = Child::create([
@@ -48,6 +49,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#EC4899',
             'notify_morning_at' => '07:30',
             'notify_reminder_at' => '18:00',
+            'monthly_rent' => 100.00,
         ]);
 
         // ── Rooms ──────────────────────────────────────────────
@@ -70,22 +72,22 @@ class DatabaseSeeder extends Seeder
         $trash = Chore::create(['name' => 'Take out trash', 'room_id' => $kitchen->id, 'value' => 1.00]);
 
         // Guest Bathroom (daily)
-        $cleanToilet = Chore::create(['name' => 'Clean toilet', 'room_id' => $guestBathroom->id]);
-        $wipeMirror = Chore::create(['name' => 'Wipe mirror', 'room_id' => $guestBathroom->id]);
-        Chore::create(['name' => 'Sweep floor', 'room_id' => $guestBathroom->id]);
+        $cleanToilet = Chore::create(['name' => 'Clean toilet', 'room_id' => $guestBathroom->id, 'value' => 2.00]);
+        $wipeMirror = Chore::create(['name' => 'Wipe mirror', 'room_id' => $guestBathroom->id, 'value' => 0.75]);
+        Chore::create(['name' => 'Sweep floor', 'room_id' => $guestBathroom->id, 'value' => 1.00]);
 
         // Living Room
-        Chore::create(['name' => 'Vacuum', 'room_id' => $livingRoom->id, 'days_of_week' => ['saturday']]);
-        Chore::create(['name' => 'Pick up toys', 'room_id' => $livingRoom->id]);
-        Chore::create(['name' => 'Dust shelves', 'room_id' => $livingRoom->id]);
+        Chore::create(['name' => 'Vacuum', 'room_id' => $livingRoom->id, 'days_of_week' => ['saturday'], 'value' => 2.00]);
+        Chore::create(['name' => 'Pick up toys', 'room_id' => $livingRoom->id, 'value' => 0.75]);
+        Chore::create(['name' => 'Dust shelves', 'room_id' => $livingRoom->id, 'value' => 1.00]);
 
         // Mud Room (daily)
-        Chore::create(['name' => 'Organize shoes', 'room_id' => $mudRoom->id]);
-        Chore::create(['name' => 'Sweep floor', 'room_id' => $mudRoom->id]);
+        Chore::create(['name' => 'Organize shoes', 'room_id' => $mudRoom->id, 'value' => 0.75]);
+        Chore::create(['name' => 'Sweep floor', 'room_id' => $mudRoom->id, 'value' => 1.00]);
 
         // Laundry Room (daily)
-        Chore::create(['name' => 'Start laundry', 'room_id' => $laundryRoom->id]);
-        Chore::create(['name' => 'Fold clothes', 'room_id' => $laundryRoom->id]);
+        Chore::create(['name' => 'Start laundry', 'room_id' => $laundryRoom->id, 'value' => 1.00]);
+        Chore::create(['name' => 'Fold clothes', 'room_id' => $laundryRoom->id, 'value' => 1.50]);
 
         // Yard (biweekly Saturdays, carryover eligible)
         Chore::create([
@@ -95,6 +97,7 @@ class DatabaseSeeder extends Seeder
             'frequency' => 'biweekly',
             'frequency_start_date' => '2026-03-14',
             'is_carryover_eligible' => true,
+            'value' => 5.00,
         ]);
         Chore::create([
             'name' => 'Weedeat',
@@ -103,6 +106,7 @@ class DatabaseSeeder extends Seeder
             'frequency' => 'biweekly',
             'frequency_start_date' => '2026-03-14',
             'is_carryover_eligible' => true,
+            'value' => 3.00,
         ]);
 
         // Kid room chores (daily, per-child)

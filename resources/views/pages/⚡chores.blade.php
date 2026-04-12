@@ -348,10 +348,10 @@ class extends Component
                             style="width: {{ $earnProgress }}%"
                         ></div>
                     </div>
-                    <p class="mt-1 text-xs text-gray-400">
-                        ${{ number_format($earnings['potential'], 2) }} possible this month
+                    <p class="mt-1 flex items-center justify-between text-xs text-gray-400">
+                        <span>${{ number_format($earnings['potential'], 2) }} possible</span>
                         @if ($earnings['missed'] > 0)
-                            · <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>
+                            <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>
                         @endif
                     </p>
                 @endif
@@ -359,7 +359,7 @@ class extends Component
         </div>
 
         {{-- Chores by room --}}
-        <div class="flex-1 px-5 pb-8 pt-4">
+        <div class="flex-1 px-5 pb-8 pt-6">
             {{-- Carryover section --}}
             @if (count($this->carryoverChores) > 0)
                 <div class="mb-6">
