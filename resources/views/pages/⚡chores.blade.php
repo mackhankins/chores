@@ -121,7 +121,7 @@ class extends Component
     {
         $child = $this->child();
         if (! $child) {
-            return ['earned' => 0, 'rent' => null, 'paid' => 0, 'balance' => 0, 'potential' => 0];
+            return ['earned' => 0, 'rent' => null, 'paid' => 0, 'balance' => 0, 'potential' => 0, 'missed' => 0];
         }
 
         $earned = (float) ChoreCompletion::query()
@@ -140,22 +140,37 @@ class extends Component
 
         $balance = $rent !== null ? max(0, $rent - $earned - $paid) : $earned;
 
-        // Calculate potential earnings for the full month
+        // Potential = already-earned from past days + everything still achievable today through month-end.
         $service = app(ChoreService::class);
-        $potential = 0.0;
-        $monthStart = today()->startOfMonth();
-        $monthEnd = today()->endOfMonth();
+        $earnedBeforeToday = (float) ChoreCompletion::query()
+            ->where('child_id', $child->id)
+            ->whereBetween('completed_date', [today()->startOfMonth(), today()->subDay()])
+            ->sum('earned_amount');
 
-        foreach (\Carbon\CarbonPeriod::create($monthStart, $monthEnd) as $date) {
+        $remaining = 0.0;
+        foreach (\Carbon\CarbonPeriod::create(today(), today()->endOfMonth()) as $date) {
             if ($child->isOnVacation($date)) {
                 continue;
             }
 
-            $dayChores = $service->getChoresForChildOnDate($child, $date);
-            foreach ($dayChores as $item) {
-                $potential += (float) ($item['chore']->value ?? 0);
+            foreach ($service->getChoresForChildOnDate($child, $date) as $item) {
+                $remaining += (float) ($item['chore']->value ?? 0);
             }
         }
+
+        $scheduledBeforeToday = 0.0;
+        foreach (\Carbon\CarbonPeriod::create(today()->startOfMonth(), today()->subDay()) as $date) {
+            if ($child->isOnVacation($date)) {
+                continue;
+            }
+
+            foreach ($service->getChoresForChildOnDate($child, $date) as $item) {
+                $scheduledBeforeToday += (float) ($item['chore']->value ?? 0);
+            }
+        }
+
+        $potential = $earnedBeforeToday + $remaining;
+        $missed = max(0, $scheduledBeforeToday - $earnedBeforeToday);
 
         return [
             'earned' => $earned,
@@ -163,6 +178,7 @@ class extends Component
             'paid' => $paid,
             'balance' => $balance,
             'potential' => $potential,
+            'missed' => $missed,
         ];
     }
 
@@ -309,9 +325,14 @@ class extends Component
                     </div>
                     <div class="mt-1 flex items-center justify-between text-xs text-gray-400">
                         <span>${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['rent'], 2) }}</span>
-                        @if ($potentialSavings > 0 && $earnings['balance'] > 0)
-                            <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} still possible</span>
-                        @endif
+                        <span>
+                            @if ($potentialSavings > 0 && $earnings['balance'] > 0)
+                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} still possible</span>
+                            @endif
+                            @if ($earnings['missed'] > 0)
+                                <span class="text-red-400">· ${{ number_format($earnings['missed'], 2) }} missed</span>
+                            @endif
+                        </span>
                     </div>
                 @elseif ($earnings['potential'] > 0)
                     @php
@@ -327,7 +348,9 @@ class extends Component
                             style="width: {{ $earnProgress }}%"
                         ></div>
                     </div>
-                    <p class="mt-1 text-xs text-gray-400">${{ number_format($earnings['potential'], 2) }} possible this month</p>
+                    <p class="mt-1 text-xs text-gray-400">
+                        ${{ number_format($earnings['potential'], 2) }} possible this month@if ($earnings['missed'] > 0) · <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>@endif
+                    </p>
                 @endif
             </div>
         </div>
