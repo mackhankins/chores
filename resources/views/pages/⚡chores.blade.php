@@ -349,7 +349,10 @@ class extends Component
                         ></div>
                     </div>
                     <p class="mt-1 text-xs text-gray-400">
-                        ${{ number_format($earnings['potential'], 2) }} possible this month@if ($earnings['missed'] > 0) · <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>@endif
+                        ${{ number_format($earnings['potential'], 2) }} possible this month
+                        @if ($earnings['missed'] > 0)
+                            · <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>
+                        @endif
                     </p>
                 @endif
             </div>
