@@ -148,6 +148,16 @@ class extends Component
             ->whereBetween('completed_date', [today()->startOfMonth(), today()->subDay()])
             ->sum('earned_amount');
 
+        // Resolved carryovers: completion row is dated today, but should credit the original missed day.
+        $resolvedCarryoverValue = (float) ChoreMiss::query()
+            ->where('child_id', $child->id)
+            ->whereNotNull('completed_at')
+            ->whereBetween('missed_date', [today()->startOfMonth(), today()->subDay()])
+            ->join('chores', 'chore_misses.chore_id', '=', 'chores.id')
+            ->sum('chores.value');
+
+        $earnedBeforeToday += $resolvedCarryoverValue;
+
         $remaining = 0.0;
         foreach (\Carbon\CarbonPeriod::create(today(), today()->endOfMonth()) as $date) {
             if ($child->isOnVacation($date)) {

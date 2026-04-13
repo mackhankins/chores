@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Child;
 use App\Models\ChoreCompletion;
+use App\Models\ChoreMiss;
 use App\Models\RentPayment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -16,6 +17,37 @@ class ChoreReportingService
     ) {}
 
     /**
+     * Build a [scheduled_date => [chore_id, ...]] lookup that treats both
+     * same-day completions and resolved carryover misses as completed on
+     * the originally-scheduled date.
+     *
+     * @return array<string, array<int, string>>
+     */
+    protected function buildCompletedLookup(Child $child, Carbon $startDate, Carbon $endDate): array
+    {
+        $lookup = [];
+
+        ChoreCompletion::query()
+            ->where('child_id', $child->id)
+            ->whereBetween('completed_date', [$startDate, $endDate])
+            ->get()
+            ->each(function (ChoreCompletion $c) use (&$lookup) {
+                $lookup[$c->completed_date->toDateString()][] = $c->chore_id;
+            });
+
+        ChoreMiss::query()
+            ->where('child_id', $child->id)
+            ->whereNotNull('completed_at')
+            ->whereBetween('missed_date', [$startDate, $endDate])
+            ->get()
+            ->each(function (ChoreMiss $m) use (&$lookup) {
+                $lookup[$m->missed_date->toDateString()][] = $m->chore_id;
+            });
+
+        return $lookup;
+    }
+
+    /**
      * Get completion stats for a child over a date range.
      *
      * @return array{total: int, completed: int, rate: float}
@@ -25,11 +57,7 @@ class ChoreReportingService
         $total = 0;
         $completed = 0;
 
-        $completedLookup = ChoreCompletion::query()
-            ->where('child_id', $child->id)
-            ->whereBetween('completed_date', [$startDate, $endDate])
-            ->get()
-            ->groupBy(fn (ChoreCompletion $c) => $c->completed_date->toDateString());
+        $completedLookup = $this->buildCompletedLookup($child, $startDate, $endDate);
 
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
             if ($date->isAfter(today())) {
@@ -44,9 +72,7 @@ class ChoreReportingService
             $dayTotal = $chores->count();
             $total += $dayTotal;
 
-            $dayCompletedIds = $completedLookup->get($date->toDateString(), collect())
-                ->pluck('chore_id')
-                ->toArray();
+            $dayCompletedIds = $completedLookup[$date->toDateString()] ?? [];
 
             $completed += $chores->filter(
                 fn (array $item) => in_array($item['chore']->id, $dayCompletedIds)
@@ -107,11 +133,7 @@ class ChoreReportingService
     {
         $rates = [];
 
-        $completedLookup = ChoreCompletion::query()
-            ->where('child_id', $child->id)
-            ->whereBetween('completed_date', [$startDate, $endDate])
-            ->get()
-            ->groupBy(fn (ChoreCompletion $c) => $c->completed_date->toDateString());
+        $completedLookup = $this->buildCompletedLookup($child, $startDate, $endDate);
 
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
             if ($date->isAfter(today())) {
@@ -129,9 +151,7 @@ class ChoreReportingService
                 continue;
             }
 
-            $dayCompletedIds = $completedLookup->get($date->toDateString(), collect())
-                ->pluck('chore_id')
-                ->toArray();
+            $dayCompletedIds = $completedLookup[$date->toDateString()] ?? [];
 
             $dayCompleted = $chores->filter(
                 fn (array $item) => in_array($item['chore']->id, $dayCompletedIds)
@@ -152,11 +172,7 @@ class ChoreReportingService
     {
         $choreStats = [];
 
-        $completedLookup = ChoreCompletion::query()
-            ->where('child_id', $child->id)
-            ->whereBetween('completed_date', [$startDate, $endDate])
-            ->get()
-            ->groupBy(fn (ChoreCompletion $c) => $c->completed_date->toDateString());
+        $completedLookup = $this->buildCompletedLookup($child, $startDate, $endDate);
 
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
             if ($date->isAfter(today())) {
@@ -168,9 +184,7 @@ class ChoreReportingService
             }
 
             $chores = $this->choreService->getChoresForChildOnDate($child, $date);
-            $dayCompletedIds = $completedLookup->get($date->toDateString(), collect())
-                ->pluck('chore_id')
-                ->toArray();
+            $dayCompletedIds = $completedLookup[$date->toDateString()] ?? [];
 
             foreach ($chores as $item) {
                 $choreId = $item['chore']->id;
