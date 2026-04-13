@@ -88,8 +88,19 @@ class extends Component
             return [];
         }
 
-        $service = app(ChoreService::class);
-        $misses = $service->getCarryoverChoresForChild($child);
+        $carryoverDays = config('chores.carryover_days', 7);
+        $cutoffDate = today()->subDays($carryoverDays);
+
+        $misses = ChoreMiss::query()
+            ->with('chore.room')
+            ->where('child_id', $child->id)
+            ->where('missed_date', '>=', $cutoffDate)
+            ->where(function ($q) {
+                $q->whereNull('completed_at')
+                    ->orWhereDate('completed_at', today());
+            })
+            ->orderBy('missed_date')
+            ->get();
 
         $grouped = [];
         foreach ($misses as $miss) {
@@ -111,6 +122,7 @@ class extends Component
                 'id' => $miss->id,
                 'chore_name' => $miss->chore->name,
                 'missed_date' => $miss->missed_date->format('D n/j'),
+                'completed' => $miss->completed_at !== null,
             ];
         }
 
@@ -208,6 +220,14 @@ class extends Component
 
         if ($existing) {
             $existing->delete();
+
+            // Keep any carryover miss resolved today in sync — otherwise the Catch Up
+            // list would still show the chore as done after the kid untapped it here.
+            ChoreMiss::query()
+                ->where('chore_id', $choreId)
+                ->where('child_id', $child->id)
+                ->whereDate('completed_at', today())
+                ->update(['completed_at' => null]);
         } else {
             $chore = Chore::find($choreId);
 
@@ -220,6 +240,7 @@ class extends Component
         }
 
         unset($this->choresByRoom);
+        unset($this->carryoverChores);
         unset($this->monthlyEarnings);
     }
 
@@ -233,19 +254,39 @@ class extends Component
         $miss = ChoreMiss::query()
             ->where('id', $missId)
             ->where('child_id', $child->id)
-            ->whereNull('completed_at')
             ->first();
 
-        if ($miss) {
+        if (! $miss) {
+            return;
+        }
+
+        if ($miss->completed_at?->isToday()) {
+            $miss->update(['completed_at' => null]);
+
+            // Only clear today's paired completion if today's schedule doesn't also own it.
+            $service = app(ChoreService::class);
+            $scheduledTodayIds = $service->getChoresForChildOnDate($child, today())
+                ->pluck('chore.id');
+
+            if (! $scheduledTodayIds->contains($miss->chore_id)) {
+                ChoreCompletion::query()
+                    ->where('chore_id', $miss->chore_id)
+                    ->where('child_id', $child->id)
+                    ->where('completed_date', today())
+                    ->delete();
+            }
+        } elseif ($miss->completed_at === null) {
             $miss->update(['completed_at' => now()]);
 
             if ($miss->chore?->value) {
-                ChoreCompletion::create([
-                    'chore_id' => $miss->chore_id,
-                    'child_id' => $child->id,
-                    'completed_date' => today(),
-                    'earned_amount' => $miss->chore->value,
-                ]);
+                ChoreCompletion::firstOrCreate(
+                    [
+                        'chore_id' => $miss->chore_id,
+                        'child_id' => $child->id,
+                        'completed_date' => today(),
+                    ],
+                    ['earned_amount' => $miss->chore->value],
+                );
             }
         }
 
@@ -294,7 +335,12 @@ class extends Component
                 }
                 $carryoverCount = 0;
                 foreach ($this->carryoverChores as $room) {
-                    $carryoverCount += count($room['chores']);
+                    foreach ($room['chores'] as $chore) {
+                        $carryoverCount++;
+                        if ($chore['completed']) {
+                            $completedChores++;
+                        }
+                    }
                 }
                 $totalChores += $carryoverCount;
                 $progress = $totalChores > 0 ? round(($completedChores / $totalChores) * 100) : 0;
@@ -387,12 +433,17 @@ class extends Component
                                 @foreach ($room['chores'] as $chore)
                                     <button
                                         wire:click="completeCarryover('{{ $chore['id'] }}')"
-                                        class="flex w-full items-center gap-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm transition-transform active:scale-[0.97]"
+                                        class="flex w-full items-center gap-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm transition-transform active:scale-[0.97] {{ $chore['completed'] ? 'opacity-50' : '' }}"
                                     >
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all {{ $chore['completed'] ? 'border-green-500 bg-green-500 text-white' : 'border-amber-400' }}">
+                                            @if ($chore['completed'])
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            @endif
                                         </div>
                                         <div class="text-left">
-                                            <span class="text-lg font-medium">{{ $chore['chore_name'] }}</span>
+                                            <span class="text-lg font-medium {{ $chore['completed'] ? 'text-gray-400 line-through' : '' }}">{{ $chore['chore_name'] }}</span>
                                             <span class="block text-xs text-amber-600">From {{ $chore['missed_date'] }}</span>
                                         </div>
                                     </button>
