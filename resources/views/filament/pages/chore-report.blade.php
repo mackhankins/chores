@@ -46,6 +46,13 @@
                     </x-filament::input.select>
                 </x-filament::input.wrapper>
             </label>
+
+            <label class="flex items-end">
+                <span class="flex items-center gap-2 pb-2 text-sm font-medium text-gray-950 dark:text-white">
+                    <input type="checkbox" wire:model.live="missedOnly" class="fi-checkbox-input rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500 dark:border-gray-700 dark:bg-white/5" />
+                    Missed only
+                </span>
+            </label>
         </div>
 
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
@@ -127,8 +134,63 @@
         </div>
     </x-filament::section>
 
+    {{-- Missed chores (instance-level) --}}
+    @if ($missedOnly)
+        <x-filament::section>
+            <x-slot name="heading">Missed Chores</x-slot>
+            <x-slot name="description">Past, unchecked chores &mdash; click to credit the child retroactively</x-slot>
+
+            @if ($data['missedInstances']->isEmpty())
+                <p class="py-4 text-sm text-gray-500 dark:text-gray-400">No missed chores in this range.</p>
+            @else
+                <div class="-mx-6 -mb-6 overflow-x-auto rounded-b-xl">
+                    <table class="fi-ta-table w-full table-auto divide-y divide-gray-200 text-start dark:divide-white/5">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-white/5">
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 sm:ps-6 dark:text-gray-400">Date</th>
+                                @if (! $childFilter)
+                                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Child</th>
+                                @endif
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Chore</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Room</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 sm:pe-6 dark:text-gray-400"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-white/5">
+                            @foreach ($data['missedInstances'] as $row)
+                                <tr>
+                                    <td class="px-4 py-3.5 text-sm tabular-nums text-gray-600 sm:ps-6 dark:text-gray-400">{{ $row['date']->format('D, M j') }}</td>
+                                    @if (! $childFilter)
+                                        <td class="px-4 py-3.5 text-sm">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $row['child']->avatar_color }}"></span>
+                                                <span class="font-medium text-gray-950 dark:text-white">{{ $row['child']->name }}</span>
+                                            </div>
+                                        </td>
+                                    @endif
+                                    <td class="px-4 py-3.5 text-sm font-medium text-gray-950 dark:text-white">{{ $row['chore']->name }}</td>
+                                    <td class="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-400">{{ $row['room_name'] }}</td>
+                                    <td class="px-4 py-3.5 text-end sm:pe-6">
+                                        <x-filament::button
+                                            size="xs"
+                                            color="success"
+                                            icon="heroicon-m-check"
+                                            wire:click="markMissedComplete('{{ $row['child']->id }}', '{{ $row['chore']->id }}', '{{ $row['date']->toDateString() }}')"
+                                        >
+                                            Mark complete
+                                        </x-filament::button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-filament::section>
+    @endif
+
     {{-- Per-chore breakdown --}}
-    @if ($data['perChoreStats'])
+    @if (! $missedOnly && $data['perChoreStats'])
         <x-filament::section>
             <x-slot name="heading">Chore Breakdown</x-slot>
             <x-slot name="description">Sorted by completion rate &mdash; worst first</x-slot>

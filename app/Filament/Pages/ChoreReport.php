@@ -3,10 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\Child;
+use App\Models\Chore;
+use App\Models\ChoreCompletion;
+use App\Models\ChoreMiss;
 use App\Services\ChoreReportingService;
 use BackedEnum;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
@@ -35,6 +39,8 @@ class ChoreReport extends Page implements HasForms
     public ?string $startDate = null;
 
     public ?string $endDate = null;
+
+    public bool $missedOnly = false;
 
     public function mount(): void
     {
@@ -71,19 +77,56 @@ class ChoreReport extends Page implements HasForms
         }
 
         $perChoreStats = null;
+        $missedInstances = null;
 
-        if ($this->childFilter) {
-            $child = Child::find($this->childFilter);
-            if ($child) {
-                $perChoreStats = $service->getPerChoreStats($child, $start, $end);
-            }
+        $selectedChild = $this->childFilter ? Child::find($this->childFilter) : null;
+
+        if ($this->missedOnly) {
+            $missedInstances = $service->getMissedInstances($selectedChild, $start, $end);
+        } elseif ($selectedChild) {
+            $perChoreStats = $service->getPerChoreStats($selectedChild, $start, $end);
         }
 
         return [
             'childrenStats' => $childrenStats,
             'perChoreStats' => $perChoreStats,
+            'missedInstances' => $missedInstances,
             'startDate' => $start->format('M j, Y'),
             'endDate' => $end->format('M j, Y'),
         ];
+    }
+
+    public function markMissedComplete(string $childId, string $choreId, string $date): void
+    {
+        $child = Child::find($childId);
+        $chore = Chore::find($choreId);
+
+        if (! $child || ! $chore) {
+            return;
+        }
+
+        $scheduledDate = Carbon::parse($date)->startOfDay();
+
+        ChoreCompletion::firstOrCreate(
+            [
+                'chore_id' => $chore->id,
+                'child_id' => $child->id,
+                'completed_date' => $scheduledDate,
+            ],
+            ['earned_amount' => $chore->value],
+        );
+
+        ChoreMiss::query()
+            ->where('chore_id', $chore->id)
+            ->where('child_id', $child->id)
+            ->whereDate('missed_date', $scheduledDate)
+            ->whereNull('completed_at')
+            ->update(['completed_at' => now()]);
+
+        Notification::make()
+            ->title("Marked complete for {$child->name}")
+            ->body("{$chore->name} on {$scheduledDate->format('M j, Y')}")
+            ->success()
+            ->send();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Child;
 use App\Models\Chore;
 use App\Models\ChoreAssignment;
+use App\Models\ChoreCompletion;
 use App\Models\ChoreMiss;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -118,13 +119,79 @@ class ChoreService
         $carryoverDays = config('chores.carryover_days', 7);
         $cutoffDate = today()->subDays($carryoverDays);
 
-        return ChoreMiss::query()
+        $misses = ChoreMiss::query()
             ->with('chore.room')
             ->where('child_id', $child->id)
             ->whereNull('completed_at')
             ->where('missed_date', '>=', $cutoffDate)
             ->orderBy('missed_date')
             ->get();
+
+        return $this->filterSupersededMisses($misses, $child);
+    }
+
+    /**
+     * Drop misses whose chore has a newer scheduled occurrence — today's schedule,
+     * a later miss, or a later completion. The earning window closes the moment
+     * the chore comes back around, so an older miss can no longer be caught up.
+     *
+     * Already-resolved misses (completed_at set) pass through untouched so the UI
+     * can still render them with a checkmark on the day they were resolved.
+     *
+     * @param  Collection<int, ChoreMiss>  $misses
+     * @return Collection<int, ChoreMiss>
+     */
+    public function filterSupersededMisses(Collection $misses, Child $child): Collection
+    {
+        if ($misses->isEmpty()) {
+            return $misses;
+        }
+
+        $todayChoreIds = $this->getTodaysChoresForChild($child)
+            ->pluck('chore.id')
+            ->all();
+
+        $choreIds = $misses->pluck('chore_id')->unique()->all();
+
+        $latestMissDates = ChoreMiss::query()
+            ->where('child_id', $child->id)
+            ->whereIn('chore_id', $choreIds)
+            ->selectRaw('chore_id, MAX(missed_date) as latest_date')
+            ->groupBy('chore_id')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->chore_id => Carbon::parse($row->latest_date)->toDateString()])
+            ->all();
+
+        $latestCompletionDates = ChoreCompletion::query()
+            ->where('child_id', $child->id)
+            ->whereIn('chore_id', $choreIds)
+            ->selectRaw('chore_id, MAX(completed_date) as latest_date')
+            ->groupBy('chore_id')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->chore_id => Carbon::parse($row->latest_date)->toDateString()])
+            ->all();
+
+        return $misses->filter(function (ChoreMiss $miss) use ($todayChoreIds, $latestMissDates, $latestCompletionDates) {
+            if ($miss->completed_at !== null) {
+                return true;
+            }
+
+            if (in_array($miss->chore_id, $todayChoreIds)) {
+                return false;
+            }
+
+            $missDateStr = $miss->missed_date->toDateString();
+
+            if (($latestMissDates[$miss->chore_id] ?? null) > $missDateStr) {
+                return false;
+            }
+
+            if (($latestCompletionDates[$miss->chore_id] ?? null) > $missDateStr) {
+                return false;
+            }
+
+            return true;
+        })->values();
     }
 
     /**

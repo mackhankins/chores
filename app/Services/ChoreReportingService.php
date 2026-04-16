@@ -164,6 +164,58 @@ class ChoreReportingService
     }
 
     /**
+     * Get instance-level missed chore rows for a date range.
+     *
+     * Emits one row per (child, chore, scheduled_date) where the chore was assigned
+     * but has no matching completion on that date. Today is excluded so live, still-
+     * actionable chores aren't flagged as missed.
+     *
+     * @return Collection<int, array{child: Child, chore: Chore, date: Carbon, room_name: string}>
+     */
+    public function getMissedInstances(?Child $child, Carbon $startDate, Carbon $endDate): Collection
+    {
+        $children = $child ? collect([$child]) : Child::all();
+        $cutoff = today()->subDay();
+
+        $rows = collect();
+
+        foreach ($children as $c) {
+            $completedLookup = $this->buildCompletedLookup($c, $startDate, $endDate);
+
+            foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
+                if ($date->isAfter($cutoff)) {
+                    break;
+                }
+
+                if ($c->isOnVacation($date)) {
+                    continue;
+                }
+
+                $dayCompletedIds = $completedLookup[$date->toDateString()] ?? [];
+
+                foreach ($this->choreService->getChoresForChildOnDate($c, $date) as $item) {
+                    if (in_array($item['chore']->id, $dayCompletedIds)) {
+                        continue;
+                    }
+
+                    $rows->push([
+                        'child' => $c,
+                        'chore' => $item['chore'],
+                        'date' => $date->copy(),
+                        'room_name' => $item['chore']->room->name,
+                    ]);
+                }
+            }
+        }
+
+        return $rows->sortBy([
+            ['date', 'asc'],
+            ['child.name', 'asc'],
+            ['chore.name', 'asc'],
+        ])->values();
+    }
+
+    /**
      * Get per-chore breakdown for a child over a date range.
      *
      * @return Collection<int, array{chore_name: string, room_name: string, total: int, completed: int, rate: float}>

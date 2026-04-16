@@ -102,6 +102,8 @@ class extends Component
             ->orderBy('missed_date')
             ->get();
 
+        $misses = app(ChoreService::class)->filterSupersededMisses($misses, $child);
+
         $grouped = [];
         foreach ($misses as $miss) {
             if (! $miss->chore || ! $miss->chore->room) {
