@@ -370,49 +370,28 @@ class extends Component
                     @php
                         $totalCredit = $earnings['earned'] + $earnings['paid'];
                         $expensesProgress = $earnings['expenses'] > 0 ? min(100, round(($totalCredit / $earnings['expenses']) * 100)) : 100;
-                        $potentialSavings = $earnings['potential'] - $earnings['earned'];
+                        $paidOff = $earnings['balance'] <= 0;
                     @endphp
                     <div class="mt-4 mb-2 flex items-center justify-between text-sm">
-                        <span class="font-medium">{{ $earnings['balance'] > 0 ? 'Expenses' : 'Expenses — Paid off!' }}</span>
-                        <span class="font-bold {{ $earnings['balance'] > 0 ? 'text-red-500' : 'text-green-600' }}">${{ number_format($earnings['balance'], 2) }}</span>
+                        <span class="font-medium">Expenses</span>
+                        <span class="font-bold {{ $paidOff ? 'text-green-600' : 'text-gray-700' }}">
+                            {{ $paidOff ? 'Paid off! 🎉' : '$' . number_format($earnings['balance'], 2) . ' left' }}
+                        </span>
                     </div>
-                    <div class="h-3 overflow-hidden rounded-full bg-red-100">
+                    <div class="h-3 overflow-hidden rounded-full bg-gray-200">
                         <div
                             class="h-full rounded-full bg-green-500 transition-all duration-500"
                             style="width: {{ $expensesProgress }}%"
                         ></div>
                     </div>
-                    <div class="mt-1 flex items-center justify-between text-xs text-gray-400">
-                        <span>${{ number_format($totalCredit, 2) }} earned</span>
-                        <span>
-                            @if ($potentialSavings > 0 && $earnings['balance'] > 0)
-                                <span class="text-green-600">${{ number_format(min($potentialSavings, $earnings['balance']), 2) }} left</span>
-                            @endif
-                            @if ($earnings['missed'] > 0)
-                                <span class="text-red-400">· ${{ number_format($earnings['missed'], 2) }} missed</span>
-                            @endif
-                        </span>
-                    </div>
-                @elseif ($earnings['potential'] > 0)
-                    @php
-                        $earnProgress = $earnings['potential'] > 0 ? min(100, round(($earnings['earned'] / $earnings['potential']) * 100)) : 0;
-                    @endphp
-                    <div class="mt-4 mb-2 flex items-center justify-between text-sm">
+                    <p class="mt-1 text-xs text-gray-400">
+                        ${{ number_format($totalCredit, 2) }} of ${{ number_format($earnings['expenses'], 2) }}
+                    </p>
+                @elseif ($earnings['earned'] > 0)
+                    <div class="mt-4 flex items-center justify-between text-sm">
                         <span class="font-medium">Earned</span>
                         <span class="font-bold text-green-600">${{ number_format($earnings['earned'], 2) }}</span>
                     </div>
-                    <div class="h-3 overflow-hidden rounded-full bg-gray-200">
-                        <div
-                            class="h-full rounded-full bg-green-500 transition-all duration-500"
-                            style="width: {{ $earnProgress }}%"
-                        ></div>
-                    </div>
-                    <p class="mt-1 flex items-center justify-between text-xs text-gray-400">
-                        <span>${{ number_format($earnings['potential'], 2) }} possible</span>
-                        @if ($earnings['missed'] > 0)
-                            <span class="text-red-400">${{ number_format($earnings['missed'], 2) }} missed</span>
-                        @endif
-                    </p>
                 @endif
             </div>
         </div>

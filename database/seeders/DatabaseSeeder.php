@@ -49,7 +49,6 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#EC4899',
             'notify_morning_at' => '07:30',
             'notify_reminder_at' => '18:00',
-            'monthly_expenses' => 100.00,
         ]);
 
         // ── Rooms ──────────────────────────────────────────────
