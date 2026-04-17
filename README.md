@@ -13,7 +13,7 @@ A family chore management app built with Laravel, Filament, and Livewire. Parent
 - **Missed chore carryover** — opt-in per chore; missed tasks reappear on the dashboard for up to 7 days (configurable) until completed
 - **Completion reporting** — dashboard stats widget with per-child monthly completion rates and sparkline charts, plus a detailed report page with period/child filters, per-chore breakdown, and a missed-only view that lets parents retroactively credit forgotten chores
 - **Chore earnings** — assign dollar values to chores; kids see a progress bar on their dashboard tracking what they've earned for the month
-- **Rent deduction mode** — kids who pay rent have earnings automatically deducted from their monthly rent, with a progress bar showing how much they've paid down; supports logging cash payments (e.g., bi-weekly)
+- **Expense deduction mode** — kids with monthly expenses (rent, cellphone, gym, etc.) have earnings automatically deducted from that total, with a progress bar showing how much they've paid down; supports logging cash payments (e.g., bi-weekly)
 - **Self-hosted** — runs on Docker with a multi-stage build, deployed via GitHub Actions to GHCR
 
 ## Tech Stack

@@ -111,12 +111,12 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3.5 text-end text-sm tabular-nums sm:pe-6">
-                                @if ($stat['rent'] !== null)
+                                @if ($stat['expenses'] !== null)
                                     <span class="{{ $stat['balance'] > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400' }} font-medium">
                                         ${{ number_format($stat['balance'], 2) }}
                                     </span>
                                     <span class="block text-xs text-gray-400">
-                                        ${{ number_format($stat['rent'], 2) }} rent
+                                        ${{ number_format($stat['expenses'], 2) }} expenses
                                         @if ($stat['paid'] > 0)
                                             · ${{ number_format($stat['paid'], 2) }} paid
                                         @endif

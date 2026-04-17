@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#3B82F6',
             'notify_morning_at' => '07:00',
             'notify_reminder_at' => '18:00',
-            'monthly_rent' => 200.00,
+            'monthly_expenses' => 200.00,
         ]);
 
         $sam = Child::create([
@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#22C55E',
             'notify_morning_at' => '07:00',
             'notify_reminder_at' => '17:30',
-            'monthly_rent' => 150.00,
+            'monthly_expenses' => 150.00,
         ]);
 
         $jordan = Child::create([
@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
             'avatar_color' => '#EC4899',
             'notify_morning_at' => '07:30',
             'notify_reminder_at' => '18:00',
-            'monthly_rent' => 100.00,
+            'monthly_expenses' => 100.00,
         ]);
 
         // ── Rooms ──────────────────────────────────────────────

@@ -24,14 +24,14 @@ class Child extends Model
         'avatar_color',
         'notify_morning_at',
         'notify_reminder_at',
-        'monthly_rent',
+        'monthly_expenses',
     ];
 
     protected function casts(): array
     {
         return [
             'carrier' => Carrier::class,
-            'monthly_rent' => 'decimal:2',
+            'monthly_expenses' => 'decimal:2',
         ];
     }
 
@@ -50,9 +50,9 @@ class Child extends Model
         return $this->hasMany(ChoreMiss::class);
     }
 
-    public function rentPayments(): HasMany
+    public function expenses(): HasMany
     {
-        return $this->hasMany(RentPayment::class);
+        return $this->hasMany(Expense::class);
     }
 
     public function rotationGroups(): BelongsToMany

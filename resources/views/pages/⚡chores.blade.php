@@ -4,7 +4,7 @@ use App\Models\Child;
 use App\Models\Chore;
 use App\Models\ChoreCompletion;
 use App\Models\ChoreMiss;
-use App\Models\RentPayment;
+use App\Models\Expense;
 use App\Services\ChoreService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -136,7 +136,7 @@ class extends Component
     {
         $child = $this->child();
         if (! $child) {
-            return ['earned' => 0, 'rent' => null, 'paid' => 0, 'balance' => 0, 'potential' => 0, 'missed' => 0];
+            return ['earned' => 0, 'expenses' => null, 'paid' => 0, 'balance' => 0, 'potential' => 0, 'missed' => 0];
         }
 
         $earned = (float) ChoreCompletion::query()
@@ -144,16 +144,16 @@ class extends Component
             ->whereBetween('completed_date', [today()->startOfMonth(), today()->endOfMonth()])
             ->sum('earned_amount');
 
-        $rent = $child->monthly_rent ? (float) $child->monthly_rent : null;
+        $expenses = $child->monthly_expenses ? (float) $child->monthly_expenses : null;
 
-        $paid = $rent !== null
-            ? (float) RentPayment::query()
+        $paid = $expenses !== null
+            ? (float) Expense::query()
                 ->where('child_id', $child->id)
                 ->whereBetween('paid_date', [today()->startOfMonth(), today()->endOfMonth()])
                 ->sum('amount')
             : 0;
 
-        $balance = $rent !== null ? max(0, $rent - $earned - $paid) : $earned;
+        $balance = $expenses !== null ? max(0, $expenses - $earned - $paid) : $earned;
 
         // Potential = already-earned from past days + everything still achievable today through month-end.
         $service = app(ChoreService::class);
@@ -199,7 +199,7 @@ class extends Component
 
         return [
             'earned' => $earned,
-            'rent' => $rent,
+            'expenses' => $expenses,
             'paid' => $paid,
             'balance' => $balance,
             'potential' => $potential,
@@ -365,21 +365,21 @@ class extends Component
                     <p class="mt-2 text-center text-sm font-bold text-green-600">All done! Great job! 🎉</p>
                 @endif
 
-                {{-- Earnings / Rent --}}
-                @if ($earnings['rent'] !== null)
+                {{-- Earnings / Expenses --}}
+                @if ($earnings['expenses'] !== null)
                     @php
                         $totalCredit = $earnings['earned'] + $earnings['paid'];
-                        $rentProgress = $earnings['rent'] > 0 ? min(100, round(($totalCredit / $earnings['rent']) * 100)) : 100;
+                        $expensesProgress = $earnings['expenses'] > 0 ? min(100, round(($totalCredit / $earnings['expenses']) * 100)) : 100;
                         $potentialSavings = $earnings['potential'] - $earnings['earned'];
                     @endphp
                     <div class="mt-4 mb-2 flex items-center justify-between text-sm">
-                        <span class="font-medium">{{ $earnings['balance'] > 0 ? 'Rent' : 'Rent — Paid off!' }}</span>
+                        <span class="font-medium">{{ $earnings['balance'] > 0 ? 'Expenses' : 'Expenses — Paid off!' }}</span>
                         <span class="font-bold {{ $earnings['balance'] > 0 ? 'text-red-500' : 'text-green-600' }}">${{ number_format($earnings['balance'], 2) }}</span>
                     </div>
                     <div class="h-3 overflow-hidden rounded-full bg-red-100">
                         <div
                             class="h-full rounded-full bg-green-500 transition-all duration-500"
-                            style="width: {{ $rentProgress }}%"
+                            style="width: {{ $expensesProgress }}%"
                         ></div>
                     </div>
                     <div class="mt-1 flex items-center justify-between text-xs text-gray-400">

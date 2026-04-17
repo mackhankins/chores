@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\RentPayments\Schemas;
+namespace App\Filament\Resources\Expenses\Schemas;
 
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -8,7 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
-class RentPaymentForm
+class ExpenseForm
 {
     public static function configure(Schema $schema): Schema
     {
@@ -18,7 +18,7 @@ class RentPaymentForm
                     ->relationship(
                         'child',
                         'name',
-                        fn (Builder $query) => $query->whereNotNull('monthly_rent'),
+                        fn (Builder $query) => $query->whereNotNull('monthly_expenses'),
                     )
                     ->required()
                     ->searchable()

@@ -58,8 +58,8 @@ class ChildForm
                     ->numeric(),
                 ColorPicker::make('avatar_color')
                     ->required(),
-                TextInput::make('monthly_rent')
-                    ->label('Monthly Rent ($)')
+                TextInput::make('monthly_expenses')
+                    ->label('Monthly Expenses ($)')
                     ->numeric()
                     ->prefix('$')
                     ->step('0.01')

@@ -3,13 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Child;
-use App\Models\RentPayment;
+use App\Models\Expense;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<RentPayment>
+ * @extends Factory<Expense>
  */
-class RentPaymentFactory extends Factory
+class ExpenseFactory extends Factory
 {
     public function definition(): array
     {
