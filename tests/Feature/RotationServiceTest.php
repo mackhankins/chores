@@ -109,6 +109,32 @@ it('returns null when the group has no members', function () {
     expect(app(RotationService::class)->getCurrentChild($group))->toBeNull();
 });
 
+it('resolves correctly when positions start at 1 instead of 0', function () {
+    // Legacy data may have 1-indexed positions from the old Repeater UI.
+    $group = RotationGroup::create([
+        'name' => 'Legacy',
+        'period' => 'weekly',
+        'start_date' => Carbon::parse('2026-04-20'),
+    ]);
+
+    $children = collect(range(1, 3))->map(function (int $i) use ($group) {
+        $child = Child::factory()->create(['name' => "Kid {$i}"]);
+        RotationGroupMember::create([
+            'rotation_group_id' => $group->id,
+            'child_id' => $child->id,
+            'position' => $i,
+        ]);
+
+        return $child;
+    });
+
+    $service = app(RotationService::class);
+
+    expect($service->getCurrentChild($group, Carbon::parse('2026-04-20'))->id)->toBe($children[0]->id)
+        ->and($service->getCurrentChild($group, Carbon::parse('2026-04-27'))->id)->toBe($children[1]->id)
+        ->and($service->getCurrentChild($group, Carbon::parse('2026-05-04'))->id)->toBe($children[2]->id);
+});
+
 it('defaults to today when no date is passed', function () {
     Carbon::setTestNow('2026-04-27 09:00:00');
 

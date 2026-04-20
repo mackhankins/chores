@@ -23,9 +23,9 @@ class RotationService
         }
 
         $periodsElapsed = $this->calculatePeriodsElapsed($group, $date);
-        $currentPosition = $periodsElapsed % $members->count();
+        $index = $periodsElapsed % $members->count();
 
-        return $members->firstWhere('pivot.position', $currentPosition);
+        return $members->values()->get($index);
     }
 
     /**
