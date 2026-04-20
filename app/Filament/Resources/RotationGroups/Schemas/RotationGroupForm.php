@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\RotationGroups\Schemas;
 
+use App\Models\RotationGroup;
 use App\RotationPeriod;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -23,21 +23,21 @@ class RotationGroupForm
                     ->required(),
                 DatePicker::make('start_date')
                     ->required(),
-                Repeater::make('rotationGroupMembers')
-                    ->relationship()
-                    ->schema([
-                        Select::make('child_id')
-                            ->relationship('child', 'name')
-                            ->required()
-                            ->distinct()
-                            ->searchable()
-                            ->preload(),
-                    ])
-                    ->orderColumn('position')
+                Select::make('members')
+                    ->relationship('members', 'name')
+                    ->multiple()
                     ->reorderable()
+                    ->preload()
+                    ->searchable()
                     ->columnSpanFull()
-                    ->label('Members')
-                    ->addActionLabel('Add member'),
+                    ->helperText('Rotation runs in the order you pick them — drag to reorder.')
+                    ->saveRelationshipsUsing(function (RotationGroup $record, $state): void {
+                        $sync = [];
+                        foreach (array_values((array) $state) as $index => $childId) {
+                            $sync[$childId] = ['position' => $index];
+                        }
+                        $record->members()->sync($sync);
+                    }),
             ]);
     }
 }

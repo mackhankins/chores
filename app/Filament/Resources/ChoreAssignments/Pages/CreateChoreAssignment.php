@@ -16,12 +16,20 @@ class CreateChoreAssignment extends CreateRecord
         $choreIds = $data['chore_id'] ?? [];
         unset($data['chore_id']);
 
-        // Room-level assignment — single record, no chore_id
+        $childId = $data['child_id'] ?? null;
+        $rotationGroupId = $data['rotation_group_id'] ?? null;
+
         if (! empty($data['room_id'])) {
-            return ChoreAssignment::create($data);
+            return ChoreAssignment::updateOrCreate(
+                [
+                    'room_id' => $data['room_id'],
+                    'child_id' => $childId,
+                    'rotation_group_id' => $rotationGroupId,
+                ],
+                $data,
+            );
         }
 
-        // Normalize to array (edit page sends a single ID)
         if (! is_array($choreIds)) {
             $choreIds = [$choreIds];
         }
@@ -29,11 +37,14 @@ class CreateChoreAssignment extends CreateRecord
         $lastRecord = null;
 
         foreach ($choreIds as $choreId) {
-            $lastRecord = ChoreAssignment::firstOrCreate([
-                'chore_id' => $choreId,
-                'child_id' => $data['child_id'] ?? null,
-                'rotation_group_id' => $data['rotation_group_id'] ?? null,
-            ], $data + ['chore_id' => $choreId]);
+            $lastRecord = ChoreAssignment::updateOrCreate(
+                [
+                    'chore_id' => $choreId,
+                    'child_id' => $childId,
+                    'rotation_group_id' => $rotationGroupId,
+                ],
+                $data + ['chore_id' => $choreId],
+            );
         }
 
         return $lastRecord;

@@ -48,16 +48,35 @@ class ChoreAssignmentForm
                     ->preload()
                     ->required()
                     ->visible(fn ($get) => $get('scope') === 'room'),
+                Radio::make('target_type')
+                    ->label('Assign to')
+                    ->options([
+                        'child' => 'A specific kid',
+                        'rotation_group' => 'A rotation group',
+                    ])
+                    ->default('child')
+                    ->live()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(function ($component, $record) {
+                        $component->state($record?->rotation_group_id ? 'rotation_group' : 'child');
+                    })
+                    ->columnSpanFull(),
                 Select::make('child_id')
+                    ->label('Kid')
                     ->relationship('child', 'name')
                     ->searchable()
                     ->preload()
-                    ->helperText('Set for fixed assignments. Leave blank if using a rotation group.'),
+                    ->required(fn ($get) => $get('target_type') === 'child')
+                    ->visible(fn ($get) => $get('target_type') === 'child')
+                    ->dehydrateStateUsing(fn ($state, $get) => $get('target_type') === 'child' ? $state : null),
                 Select::make('rotation_group_id')
+                    ->label('Rotation group')
                     ->relationship('rotationGroup', 'name')
                     ->searchable()
                     ->preload()
-                    ->helperText('Set for rotating assignments. Leave blank if assigned to a specific child.'),
+                    ->required(fn ($get) => $get('target_type') === 'rotation_group')
+                    ->visible(fn ($get) => $get('target_type') === 'rotation_group')
+                    ->dehydrateStateUsing(fn ($state, $get) => $get('target_type') === 'rotation_group' ? $state : null),
             ]);
     }
 }

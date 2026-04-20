@@ -84,6 +84,12 @@ class DatabaseSeeder extends Seeder
         // Mud Room (daily)
         Chore::create(['name' => 'Organize shoes', 'room_id' => $mudRoom->id, 'value' => 0.75]);
         Chore::create(['name' => 'Sweep floor', 'room_id' => $mudRoom->id, 'value' => 1.00]);
+        $litterBoxes = Chore::create([
+            'name' => 'Empty litter boxes',
+            'room_id' => $mudRoom->id,
+            'days_of_week' => ['monday'],
+            'value' => 2.00,
+        ]);
 
         // Laundry Room (daily)
         Chore::create(['name' => 'Start laundry', 'room_id' => $laundryRoom->id, 'value' => 1.00]);
@@ -165,6 +171,9 @@ class DatabaseSeeder extends Seeder
 
         // Specific overrides: trash is always Alex's job
         ChoreAssignment::create(['chore_id' => $trash->id, 'child_id' => $alex->id]);
+
+        // Litter boxes → weekly rotation (overrides Mud Room's fixed-to-Jordan)
+        ChoreAssignment::create(['chore_id' => $litterBoxes->id, 'rotation_group_id' => $weeklyRotation->id]);
 
         // ── Sample completions (today) ─────────────────────────
         // Alex already did some chores today
